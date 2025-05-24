@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { NewProjectData, Project, UserProfile } from '@/lib/types';
 import { CreateProjectDialog } from '@/components/dashboard/CreateProjectDialog';
-import { ManageProjectMembersDialog } from '@/components/dashboard/ManageProjectMembersDialog'; // New Dialog
-import { PlusCircle, Users, FolderKanban, Loader2, Briefcase, Settings2 } from 'lucide-react'; 
+import { ManageProjectMembersDialog } from '@/components/dashboard/ManageProjectMembersDialog';
+import { PlusCircle, Users, FolderKanban, Loader2, Briefcase, Settings2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,8 +24,8 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
-  const [isManageMembersDialogOpen, setIsManageMembersDialogOpen] = useState(false); // State for new dialog
-  const [selectedProjectForMembers, setSelectedProjectForMembers] = useState<Project | null>(null); // State for selected project
+  const [isManageMembersDialogOpen, setIsManageMembersDialogOpen] = useState(false);
+  const [selectedProjectForMembers, setSelectedProjectForMembers] = useState<Project | null>(null);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
@@ -58,7 +58,7 @@ export default function DashboardPage() {
     if (currentUser?.uid) {
       fetchDashboardData();
     }
-  }, [currentUser, toast]);
+  }, [currentUser?.uid, toast]);
 
   const handleAddProject = async (projectData: NewProjectData) => {
     if (!currentUser?.uid) {
@@ -82,8 +82,10 @@ export default function DashboardPage() {
     setIsManageMembersDialogOpen(true);
   };
 
-  const onMembersUpdated = () => {
-    fetchDashboardData(); // Refetch projects and users after members are updated
+  const onMembersUpdated = async () => {
+    if (currentUser?.uid) {
+      await fetchDashboardData(); // Refetch projects and users after members are updated
+    }
   }
 
   return (
@@ -144,9 +146,11 @@ export default function DashboardPage() {
                             <Button asChild variant="outline" size="sm">
                                 <Link href={`/projects/${project.id}`}>View Board</Link>
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => openManageMembersDialog(project)}>
-                                <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Members
-                            </Button>
+                            {currentUser?.uid === project.ownerId && (
+                              <Button variant="outline" size="sm" onClick={() => openManageMembersDialog(project)}>
+                                  <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Members
+                              </Button>
+                            )}
                         </div>
                       </CardFooter>
                     </Card>
@@ -216,7 +220,7 @@ export default function DashboardPage() {
           onAddProject={handleAddProject}
         />
       )}
-      {selectedProjectForMembers && (
+      {selectedProjectForMembers && currentUser?.uid === selectedProjectForMembers.ownerId && (
         <ManageProjectMembersDialog
           project={selectedProjectForMembers}
           allUsers={allUsers}

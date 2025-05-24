@@ -57,6 +57,8 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     setProjectData(initialProject);
   }, [initialProject]);
 
+  const isOwner = useMemo(() => currentUser?.uid === projectData.ownerId, [currentUser, projectData.ownerId]);
+
   const assignableUsers = useMemo(() => {
     if (!projectData || !users) return [];
     const memberAndOwnerIds = new Set<string>([
@@ -150,12 +152,23 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const openDeleteConfirm = (taskId: TaskId) => {
+    if (!isOwner) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "Only the project owner can delete tasks." });
+      return;
+    }
     setTaskToDeleteId(taskId);
     setShowDeleteConfirm(true);
   };
 
   const handleDeleteTask = async () => {
     if (!taskToDeleteId) return;
+
+    if (!isOwner) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "Only the project owner can delete tasks." });
+      setShowDeleteConfirm(false);
+      setTaskToDeleteId(null);
+      return;
+    }
     setIsSubmitting(true);
     if (!currentUser) {
       toast({ variant: "destructive", title: "Authentication Error", description: "User must be authenticated to delete tasks." });
@@ -320,6 +333,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             column={column}
             tasks={projectData.tasks} 
             users={users} // Pass all users for general display if needed, assignableUsers is for forms
+            isOwner={isOwner}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
@@ -369,6 +383,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         }}
         task={taskToView}
         users={users} // TaskDetails can show any user (e.g. reporter not in project members)
+        isOwner={isOwner}
         onAddComment={handleAddComment}
         onEditTask={(task) => { setIsTaskDetailsDialogOpen(false); setTaskToEdit(task); setIsEditTaskDialogOpen(true); }}
         onDeleteTask={openDeleteConfirm}
@@ -399,5 +414,3 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     </div>
   );
 }
-
-    

@@ -10,6 +10,7 @@ interface KanbanColumnProps {
   column: Column;
   tasks: Task[]; 
   users: UserProfile[];
+  isOwner: boolean;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
@@ -24,6 +25,7 @@ export function KanbanColumn({
   column,
   tasks,
   users,
+  isOwner,
   onDragStart,
   onDragOver,
   onDrop,
@@ -54,6 +56,7 @@ export function KanbanColumn({
             key={task.id}
             task={task}
             users={users}
+            isOwner={isOwner}
             onDragStart={onDragStart}
             onEdit={onEditTask}
             onDelete={onDeleteTask}

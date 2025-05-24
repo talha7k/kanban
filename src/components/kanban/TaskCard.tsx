@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 interface TaskCardProps {
   task: Task;
   users: UserProfile[];
+  isOwner: boolean;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
@@ -19,7 +20,7 @@ interface TaskCardProps {
   isSubmitting?: boolean; // To disable buttons during global operations
 }
 
-export function TaskCard({ task, users, onDragStart, onEdit, onDelete, onViewDetails, isSubmitting }: TaskCardProps) {
+export function TaskCard({ task, users, isOwner, onDragStart, onEdit, onDelete, onViewDetails, isSubmitting }: TaskCardProps) {
   const assignees = task.assigneeUids?.map(uid => users.find(u => u.id === uid)).filter(Boolean) as UserProfile[] || [];
 
   const getPriorityBadgeVariant = (priority: Task['priority']) => {
@@ -94,16 +95,18 @@ export function TaskCard({ task, users, onDragStart, onEdit, onDelete, onViewDet
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit2 className="h-4 w-4" />}
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive" 
-            onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} 
-            aria-label="Delete task"
-            disabled={isSubmitting}
-          >
-             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-          </Button>
+          {isOwner && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive" 
+              onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} 
+              aria-label="Delete task"
+              disabled={isSubmitting}
+            >
+               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
       </CardFooter>
     </Card>

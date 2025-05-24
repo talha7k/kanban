@@ -27,6 +27,7 @@ interface TaskDetailsDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   task: Task | null;
   users: UserProfile[];
+  isOwner: boolean;
   onAddComment: (taskId: string, commentText: string) => Promise<void> | void; // Can be async
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
@@ -38,6 +39,7 @@ export function TaskDetailsDialog({
   onOpenChange,
   task,
   users,
+  isOwner,
   onAddComment,
   onEditTask,
   onDeleteTask,
@@ -95,9 +97,11 @@ export function TaskDetailsDialog({
                 <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment}>
                     <Edit2 className="h-4 w-4" />
                 </Button>
-                <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id); /* onOpenChange(false) handled by parent if delete successful */}} aria-label="Delete task" disabled={isSubmittingComment}>
-                    <Trash2 className="h-4 w-4" />
-                </Button>
+                {isOwner && (
+                  <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id); /* onOpenChange(false) handled by parent if delete successful */}} aria-label="Delete task" disabled={isSubmittingComment}>
+                      <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
             </div>
           </div>
           {task.priority !== 'NONE' && (
