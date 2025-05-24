@@ -54,8 +54,8 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
   return { 
     id: snapshot.id, 
     ...existingData,
-    role: existingData.role || 'staff',
-    title: existingData.title || 'Team Member', // Ensure default for older docs
+    role: existingData.role || 'staff', // Ensure default
+    title: existingData.title || 'Team Member', // Ensure default
    } as UserProfile;
 };
 
@@ -68,8 +68,8 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     return { 
       id: snapshot.id, 
       ...data,
-      role: data.role || 'staff',
-      title: data.title || 'Team Member', 
+      role: data.role || 'staff', // Ensure default
+      title: data.title || 'Team Member', // Ensure default
     } as UserProfile;
   }
   return null;
@@ -84,8 +84,8 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
       return { 
         id: doc.id, 
         ...data,
-        role: data.role || 'staff', 
-        title: data.title || 'Team Member', 
+        role: data.role || 'staff', // Ensure default
+        title: data.title || 'Team Member', // Ensure default
       } as UserProfile;
     });
   } catch (error) {
@@ -239,13 +239,23 @@ export const addTaskToProject = async (projectId: string, taskData: NewTaskData,
     
     const project = projectDoc.data() as ProjectDocument;
     const newTaskId = uuidv4();
+    
+    // Ensure optional fields are not undefined for Firestore
     const newTask: Task = {
-      ...taskData, // reporterId is part of taskData and can be undefined
+      title: taskData.title,
+      description: taskData.description ?? null, // Use nullish coalescing for stricter undefined check
+      priority: taskData.priority,
+      assigneeUids: taskData.assigneeUids ?? [],
+      reporterId: taskData.reporterId ?? null,
+      dueDate: taskData.dueDate ?? null,
+      tags: taskData.tags ?? [],
+      dependentTaskTitles: taskData.dependentTaskTitles ?? [],
+      // Fields to be set by the system
       id: newTaskId,
       projectId,
       columnId,
       order: project.tasks.filter(t => t.columnId === columnId).length,
-      comments: [],
+      comments: [], // Always initialize comments as an empty array
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -256,7 +266,7 @@ export const addTaskToProject = async (projectId: string, taskData: NewTaskData,
     });
     return newTask;
   } catch (error) {
-    console.error('Error adding task to project:', error);
+    console.error('Error adding task to project:', error, 'Task Payload:', taskData);
     throw error;
   }
 };
@@ -275,9 +285,28 @@ export const updateTaskInProject = async (projectId: string, taskId: string, tas
     const taskIndex = project.tasks.findIndex(t => t.id === taskId);
     if (taskIndex === -1) throw new Error('Task not found');
 
+    const existingTask = project.tasks[taskIndex];
+    
+    // Create a new object for the update, ensuring optional fields are handled correctly
+    const updatePayload: Partial<Task> = {};
+    for (const key in taskUpdateData) {
+        if (Object.prototype.hasOwnProperty.call(taskUpdateData, key)) {
+            const typedKey = key as keyof typeof taskUpdateData;
+            // @ts-ignore
+            const value = taskUpdateData[typedKey];
+            // @ts-ignore
+            updatePayload[typedKey] = value === undefined ? null : value;
+        }
+    }
+     // Ensure arrays are not set to null if they were previously undefined or empty in taskUpdateData
+    if (taskUpdateData.assigneeUids === undefined) updatePayload.assigneeUids = existingTask.assigneeUids ?? []; else updatePayload.assigneeUids = taskUpdateData.assigneeUids ?? [];
+    if (taskUpdateData.tags === undefined) updatePayload.tags = existingTask.tags ?? []; else updatePayload.tags = taskUpdateData.tags ?? [];
+    if (taskUpdateData.dependentTaskTitles === undefined) updatePayload.dependentTaskTitles = existingTask.dependentTaskTitles ?? []; else updatePayload.dependentTaskTitles = taskUpdateData.dependentTaskTitles ?? [];
+
+
     const updatedTask: Task = {
-      ...project.tasks[taskIndex],
-      ...taskUpdateData,
+      ...existingTask,
+      ...updatePayload, // Apply validated updates
       updatedAt: new Date().toISOString(),
     };
     
@@ -379,7 +408,7 @@ export const addCommentToTask = async (projectId: string, taskId: string, commen
     };
 
     const task = project.tasks[taskIndex];
-    const updatedComments = [...(task.comments || []), newComment];
+    const updatedComments = [...(task.comments || []), newComment]; // Ensure comments array exists
     const updatedTask: Task = { ...task, comments: updatedComments, updatedAt: new Date().toISOString() };
     
     const updatedTasks = [...project.tasks];
@@ -405,3 +434,4 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
   }
   return null;
 };
+
