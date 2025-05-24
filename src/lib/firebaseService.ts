@@ -17,9 +17,9 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { auth } from './firebase'; // Assuming auth is exported from firebase.ts
-import type { UserProfile, Project, NewProjectData, Task, Column, Comment, NewTaskData, NewCommentData, ProjectDocument, UserDocument, TaskId, ColumnId } from './types';
-import { v4 as uuidv4 } from 'uuid'; // For generating IDs
+import { auth } from './firebase'; 
+import type { UserProfile, Project, NewProjectData, Task, Column, Comment, NewTaskData, NewCommentData, ProjectDocument, UserDocument, TaskId, ColumnId, UserId } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
 const db = getFirestore();
 
@@ -38,13 +38,10 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
         name: additionalData?.name || displayName || email?.split('@')[0] || 'New User',
         email: email || '',
         avatarUrl: photoURL || `https://placehold.co/40x40.png?text=${(additionalData?.name || displayName || email || 'U').substring(0,1).toUpperCase()}`,
-        role: 'staff', // Default role
-        title: additionalData?.title || 'Team Member', // Default title
+        role: 'staff', 
+        title: additionalData?.title || 'Team Member', 
         createdAt,
-        // Spread other additionalData fields if any, though role and title are now primary
-        ...additionalData,
       };
-      // Firestore expects plain objects, so we remove 'id' before setting, as ID is the doc key
       const { id, ...profileToSave } = newUserProfile;
       await setDoc(userRef, profileToSave);
       return newUserProfile;
@@ -54,7 +51,12 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
     }
   }
   const existingData = snapshot.data() as UserDocument;
-  return { id: snapshot.id, ...existingData } as UserProfile;
+  return { 
+    id: snapshot.id, 
+    ...existingData,
+    role: existingData.role || 'staff',
+    title: existingData.title || 'Team Member', // Ensure default for older docs
+   } as UserProfile;
 };
 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
@@ -63,12 +65,11 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
   const snapshot = await getDoc(userRef);
   if (snapshot.exists()) {
     const data = snapshot.data() as UserDocument;
-    // Ensure role and title have default values if missing from older documents
     return { 
       id: snapshot.id, 
       ...data,
       role: data.role || 'staff',
-      title: data.title || '', // Or 'Team Member' if preferred for older docs lacking it
+      title: data.title || 'Team Member', 
     } as UserProfile;
   }
   return null;
@@ -83,8 +84,8 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
       return { 
         id: doc.id, 
         ...data,
-        role: data.role || 'staff', // Default for older docs
-        title: data.title || '', // Default for older docs
+        role: data.role || 'staff', 
+        title: data.title || 'Team Member', 
       } as UserProfile;
     });
   } catch (error) {
@@ -97,6 +98,10 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
 // Project Functions
 export const createProject = async (projectData: NewProjectData, ownerId: string): Promise<Project> => {
   if (!ownerId) throw new Error("Owner ID is required to create a project.");
+  const user = auth.currentUser;
+  if (!user || user.uid !== ownerId) {
+    throw new Error("User must be authenticated and match ownerId to create projects.");
+  }
   try {
     const newProjectId = uuidv4();
     const defaultColumns: Column[] = [
@@ -104,17 +109,17 @@ export const createProject = async (projectData: NewProjectData, ownerId: string
       { id: `col-${newProjectId}-2`, title: 'In Progress', order: 1 },
       { id: `col-${newProjectId}-3`, title: 'Done', order: 2 },
     ];
-    const newProject: Omit<Project, 'id'> = {
+    const newProjectDoc: Omit<Project, 'id'> = {
       ...projectData,
       ownerId,
       columns: defaultColumns,
       tasks: [],
-      memberIds: [ownerId], // Owner is a member by default
+      memberIds: [ownerId], 
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'projects', newProjectId), newProject);
-    return { ...newProject, id: newProjectId };
+    await setDoc(doc(db, 'projects', newProjectId), newProjectDoc);
+    return { ...newProjectDoc, id: newProjectId };
   } catch (error) {
     console.error('Error creating project:', error);
     throw error;
@@ -138,10 +143,6 @@ export const getProjectById = async (projectId: string): Promise<Project | null>
 export const getProjectsForUser = async (userId: string): Promise<Project[]> => {
   if (!userId) return [];
   try {
-    // Fetch projects where user is owner OR is in memberIds array
-    // Firestore doesn't support OR queries directly on different fields in this way.
-    // So, we fetch projects owned by user and projects where user is a member, then combine.
-
     const ownedQuery = query(collection(db, 'projects'), where('ownerId', '==', userId));
     const memberQuery = query(collection(db, 'projects'), where('memberIds', 'array-contains', userId));
 
@@ -162,10 +163,75 @@ export const getProjectsForUser = async (userId: string): Promise<Project[]> => 
   }
 };
 
+export const addUserToProject = async (projectId: string, userId: string): Promise<void> => {
+  const projectRef = doc(db, 'projects', projectId);
+  const userRef = doc(db, 'users', userId);
+  
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("User must be authenticated to manage project members.");
+  }
+  // Future enhancement: Check if currentUser is owner or admin of the project.
 
-// Task Functions (Tasks stored as an array in the Project document)
+  try {
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      throw new Error(`User with ID ${userId} not found.`);
+    }
+    const projectSnap = await getDoc(projectRef);
+    if (!projectSnap.exists()){
+        throw new Error(`Project with ID ${projectId} not found.`);
+    }
 
+    await updateDoc(projectRef, {
+      memberIds: arrayUnion(userId),
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(`Error adding user ${userId} to project ${projectId}:`, error);
+    throw error;
+  }
+};
+
+export const removeUserFromProject = async (projectId: string, userId: string): Promise<void> => {
+  const projectRef = doc(db, 'projects', projectId);
+
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("User must be authenticated to manage project members.");
+  }
+  // Future enhancement: Check if currentUser is owner or admin of the project.
+  // Future enhancement: Prevent owner from being removed if they are the only member/owner.
+
+  try {
+    const projectSnap = await getDoc(projectRef);
+    if (!projectSnap.exists()){
+        throw new Error(`Project with ID ${projectId} not found.`);
+    }
+    // Optional: Check if user being removed is the owner, and handle accordingly
+    // const projectData = projectSnap.data() as Project;
+    // if (projectData.ownerId === userId && projectData.memberIds && projectData.memberIds.length === 1) {
+    //   throw new Error("Cannot remove the sole owner of the project.");
+    // }
+
+    await updateDoc(projectRef, {
+      memberIds: arrayRemove(userId),
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(`Error removing user ${userId} from project ${projectId}:`, error);
+    throw error;
+  }
+};
+
+
+// Task Functions
 export const addTaskToProject = async (projectId: string, taskData: NewTaskData, columnId: ColumnId): Promise<Task> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("User must be authenticated to add tasks.");
+  }
+  
   const projectRef = doc(db, 'projects', projectId);
   try {
     const projectDoc = await getDoc(projectRef);
@@ -174,7 +240,7 @@ export const addTaskToProject = async (projectId: string, taskData: NewTaskData,
     const project = projectDoc.data() as ProjectDocument;
     const newTaskId = uuidv4();
     const newTask: Task = {
-      ...taskData, // This includes optional reporterId
+      ...taskData, // reporterId is part of taskData and can be undefined
       id: newTaskId,
       projectId,
       columnId,
@@ -196,6 +262,10 @@ export const addTaskToProject = async (projectId: string, taskData: NewTaskData,
 };
 
 export const updateTaskInProject = async (projectId: string, taskId: string, taskUpdateData: Partial<Omit<Task, 'id' | 'projectId' | 'createdAt'>>): Promise<Task> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("User must be authenticated to update tasks.");
+  }
   const projectRef = doc(db, 'projects', projectId);
   try {
     const projectDoc = await getDoc(projectRef);
@@ -226,25 +296,21 @@ export const updateTaskInProject = async (projectId: string, taskId: string, tas
 };
 
 export const deleteTaskFromProject = async (projectId: string, taskId: string): Promise<void> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("User must be authenticated to delete tasks.");
+  }
   const projectRef = doc(db, 'projects', projectId);
   try {
     const projectDoc = await getDoc(projectRef);
     if (!projectDoc.exists()) throw new Error('Project not found');
 
     const project = projectDoc.data() as ProjectDocument;
-    // Find the exact task object to remove, as arrayRemove needs the exact reference or value.
-    // If tasks are complex objects, it's often safer to read, filter, and write back the array.
     const taskToRemove = project.tasks.find(t => t.id === taskId);
     if (!taskToRemove) throw new Error('Task not found for deletion');
     
-    // Using arrayRemove with the identified object.
-    // Note: For complex objects, ensure the object passed to arrayRemove is identical to the one in Firestore.
-    // If there are discrepancies (e.g., due to local modifications not yet synced),
-    // filtering the array and setting it again (as shown in previous example) is more robust.
-    // const updatedTasks = project.tasks.filter(t => t.id !== taskId); // Alternative robust way
-    
     await updateDoc(projectRef, {
-      tasks: arrayRemove(taskToRemove), // Using arrayRemove
+      tasks: arrayRemove(taskToRemove), 
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
@@ -254,6 +320,10 @@ export const deleteTaskFromProject = async (projectId: string, taskId: string): 
 };
 
 export const moveTaskInProject = async (projectId: string, taskId: string, newColumnId: ColumnId, newOrder: number): Promise<void> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("User must be authenticated to move tasks.");
+  }
   const projectRef = doc(db, 'projects', projectId);
   try {
     const projectDoc = await getDoc(projectRef);
@@ -262,7 +332,6 @@ export const moveTaskInProject = async (projectId: string, taskId: string, newCo
     let project = projectDoc.data() as ProjectDocument;
     let taskToMove: Task | undefined;
     
-    // Create a new tasks array with the moved task updated
     const updatedTasks = project.tasks.map(task => {
       if (task.id === taskId) {
         taskToMove = { 
@@ -278,11 +347,6 @@ export const moveTaskInProject = async (projectId: string, taskId: string, newCo
 
     if (!taskToMove) throw new Error('Task not found during move operation');
 
-    // Further re-ordering logic for other tasks in the source/target column can be complex with array operations.
-    // A common strategy is to update the moved task and then re-normalize orders if strict ordering is critical
-    // on the backend. For now, client-side optimistic updates handle visual order.
-    // This update primarily ensures the moved task's columnId and its intended order are saved.
-
     await updateDoc(projectRef, {
       tasks: updatedTasks,
       updatedAt: new Date().toISOString(),
@@ -294,6 +358,10 @@ export const moveTaskInProject = async (projectId: string, taskId: string, newCo
 };
 
 export const addCommentToTask = async (projectId: string, taskId: string, commentData: NewCommentData): Promise<Comment> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser || currentUser.uid !== commentData.userId) { // Ensure comment is by the logged-in user
+    throw new Error("User must be authenticated and match comment author to add comments.");
+  }
   const projectRef = doc(db, 'projects', projectId);
   try {
     const projectDoc = await getDoc(projectRef);
