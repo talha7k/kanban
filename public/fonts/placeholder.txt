@@ -1,0 +1,3 @@
+Please add Geist font files (e.g., Geist-Regular.otf, Geist-Bold.otf, GeistMono-Regular.otf) to this directory (public/fonts/) for the localFont setup in src/app/layout.tsx to work correctly.
+
+You can download Geist fonts from: https://vercel.com/font
