@@ -15,10 +15,11 @@ import {
   arrayRemove,
   deleteDoc,
   writeBatch,
+  deleteField, // Moved import to the top
 } from 'firebase/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth } from './firebase';
-import type { UserProfile, Project, NewProjectData, Task, Column, Comment, NewTaskData, NewCommentData, ProjectDocument, UserDocument, TaskId, ColumnId, UserId, UserProjectRole } from './types';
+import type { UserProfile, Project, NewProjectData, Task, Column, Comment, NewCommentData, NewTaskData, ProjectDocument, UserDocument, TaskId, ColumnId, UserId, UserProjectRole } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 const db = getFirestore();
@@ -54,8 +55,8 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
   return {
     id: snapshot.id,
     ...existingData,
-    role: existingData.role || 'staff',
-    title: existingData.title || 'Team Member',
+    role: existingData.role || 'staff', // Ensure role defaults if missing
+    title: existingData.title || 'Team Member', // Ensure title defaults if missing
    } as UserProfile;
 };
 
@@ -94,6 +95,30 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
   }
 };
 
+export const updateUserProfile = async (userId: string, data: { name?: string, title?: string, avatarUrl?: string }): Promise<void> => {
+  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+    throw new Error("User must be authenticated and can only update their own profile.");
+  }
+  const userRef = doc(db, `users/${userId}`);
+  try {
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+
+    if (Object.keys(updateData).length === 0) {
+        return; // No changes to update
+    }
+    updateData.updatedAt = new Date().toISOString(); // Keep track of updates
+
+    await updateDoc(userRef, updateData);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
+};
+
+
 // Project Functions
 export const createProject = async (projectData: NewProjectData, ownerId: string): Promise<Project> => {
   if (!ownerId) throw new Error("Owner ID is required to create a project.");
@@ -114,7 +139,7 @@ export const createProject = async (projectData: NewProjectData, ownerId: string
       columns: defaultColumns,
       tasks: [],
       memberIds: [ownerId],
-      memberRoles: { [ownerId]: 'manager' }, // Owner is implicitly a manager of their project
+      memberRoles: { [ownerId]: 'manager' }, // Owner is manager of their project
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -143,7 +168,6 @@ export const getProjectById = async (projectId: string): Promise<Project | null>
 export const getProjectsForUser = async (userId: string): Promise<Project[]> => {
   if (!userId) return [];
   try {
-    // Query for projects where the user is the owner OR is listed in memberIds
     const projectsRef = collection(db, 'projects');
     const q = query(projectsRef, where('memberIds', 'array-contains', userId));
     
@@ -185,12 +209,12 @@ export const addUserToProject = async (projectId: string, userId: string): Promi
         throw new Error("Only the project owner can add members.");
     }
 
-    const updates: Partial<Project> & { updatedAt: string } = {
-        memberIds: arrayUnion(userId) as unknown as string[], // Firestore type trick
+    const updates: Partial<Project> & { updatedAt: string } & { [key: string]: any } = {
+        memberIds: arrayUnion(userId) as unknown as string[],
         updatedAt: new Date().toISOString(),
     };
     // Add to memberRoles with default 'member' role
-    updates[`memberRoles.${userId}` as keyof Project] = 'member';
+    updates[`memberRoles.${userId}`] = 'member';
 
 
     await updateDoc(projectRef, updates);
@@ -221,17 +245,11 @@ export const removeUserFromProject = async (projectId: string, userId: string): 
         throw new Error("The project owner cannot be removed from the project by themselves.");
     }
 
-    const updates:any = { // Using 'any' for dynamic field path, ensure type safety in usage
+    const updates:any = { 
         memberIds: arrayRemove(userId),
         updatedAt: new Date().toISOString(),
     };
-    // Remove from memberRoles
-    // Firestore does not have a direct "delete field from map" in arrayRemove style
-    // We need to fetch, modify, and set the map, or use dot notation with a specific value to delete (which is complex here)
-    // For simplicity, we might need to fetch the project, update memberRoles in code, then updateDoc.
-    // A simpler approach for now is to leave the role, it just won't be used if memberId is removed.
-    // Or, set it to a special value like null, if your types allow. For dot notation:
-    updates[`memberRoles.${userId}`] = deleteField(); // This requires importing deleteField from 'firebase/firestore'
+    updates[`memberRoles.${userId}`] = deleteField(); 
 
     await updateDoc(projectRef, updates);
   } catch (error) {
@@ -292,13 +310,13 @@ export const addTaskToProject = async (projectId: string, taskData: NewTaskData,
 
     const newTask: Task = {
       title: taskData.title,
-      description: taskData.description ?? null,
+      description: taskData.description === undefined ? null : taskData.description,
       priority: taskData.priority,
-      assigneeUids: taskData.assigneeUids ?? [],
-      reporterId: taskData.reporterId ?? null,
-      dueDate: taskData.dueDate ?? null,
-      tags: taskData.tags ?? [],
-      dependentTaskTitles: taskData.dependentTaskTitles ?? [],
+      assigneeUids: taskData.assigneeUids === undefined ? [] : taskData.assigneeUids,
+      reporterId: taskData.reporterId === undefined ? null : taskData.reporterId,
+      dueDate: taskData.dueDate === undefined ? null : taskData.dueDate,
+      tags: taskData.tags === undefined ? [] : taskData.tags,
+      dependentTaskTitles: taskData.dependentTaskTitles === undefined ? [] : taskData.dependentTaskTitles,
       id: newTaskId,
       projectId,
       columnId,
@@ -345,6 +363,8 @@ export const updateTaskInProject = async (projectId: string, taskId: string, tas
             updatePayload[typedKey] = value === undefined ? null : value;
         }
     }
+    
+    // Ensure array fields are not accidentally set to null if not provided in update
     if (taskUpdateData.assigneeUids === undefined) updatePayload.assigneeUids = existingTask.assigneeUids ?? []; else updatePayload.assigneeUids = taskUpdateData.assigneeUids ?? [];
     if (taskUpdateData.tags === undefined) updatePayload.tags = existingTask.tags ?? []; else updatePayload.tags = taskUpdateData.tags ?? [];
     if (taskUpdateData.dependentTaskTitles === undefined) updatePayload.dependentTaskTitles = existingTask.dependentTaskTitles ?? []; else updatePayload.dependentTaskTitles = taskUpdateData.dependentTaskTitles ?? [];
@@ -381,17 +401,10 @@ export const deleteTaskFromProject = async (projectId: string, taskId: string): 
     if (!projectDoc.exists()) throw new Error('Project not found');
 
     const project = projectDoc.data() as ProjectDocument;
-    const taskIndex = project.tasks.findIndex(t => t.id === taskId);
-    if (taskIndex === -1) throw new Error('Task not found');
-    
-    const taskToRemove = project.tasks[taskIndex]; // Get the actual task object
-
-    // Instead of arrayRemove by object (which can be tricky with nested/complex objects),
-    // filter the array and set it.
     const updatedTasks = project.tasks.filter(t => t.id !== taskId);
 
     await updateDoc(projectRef, {
-      tasks: updatedTasks, // Use the filtered array
+      tasks: updatedTasks, 
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
@@ -428,11 +441,7 @@ export const moveTaskInProject = async (projectId: string, taskId: string, newCo
     });
 
     if (!taskToMove) throw new Error('Task not found during move operation');
-
-    // Re-order tasks in the target column if necessary (simple example, might need more complex logic for arbitrary order changes)
-    // This part is simplified; robust reordering often involves adjusting orders of other tasks.
-    // For now, just ensure the moved task has its new order. The client-side already calculates this.
-
+    
     await updateDoc(projectRef, {
       tasks: updatedTasks,
       updatedAt: new Date().toISOString(),
@@ -492,6 +501,3 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
   }
   return null;
 };
-
-// Helper for deleting field, used in removeUserFromProject for memberRoles
-import { deleteField } from 'firebase/firestore';

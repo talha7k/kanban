@@ -4,19 +4,28 @@
 import Link from 'next/link';
 import { KanbanIcon } from '@/components/icons/KanbanIcon';
 import { Button } from '@/components/ui/button';
-import { Github, LayoutDashboard, LogOut, UserCircle, LogIn } from 'lucide-react';
+import { Github, LayoutDashboard, LogOut, UserCircle, LogIn, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function AppHeader() {
-  const { currentUser, logout, loading } = useAuth();
+  const { currentUser, userProfile, logout, loading } = useAuth();
   const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
       await logout();
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      // Router push is handled within logout() in AuthContext
     } catch (error) {
       toast({ variant: "destructive", title: "Logout Failed", description: "Could not log out at this time." });
       console.error("Logout error:", error);
@@ -53,18 +62,43 @@ export function AppHeader() {
           {loading ? (
              <Button variant="ghost" size="sm" disabled>Loading...</Button>
           ) : currentUser ? (
-            <>
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={currentUser.photoURL || undefined} alt={currentUser.displayName || currentUser.email || 'User'} data-ai-hint="user avatar" />
-                <AvatarFallback>
-                  {currentUser.email ? currentUser.email[0].toUpperCase() : <UserCircle className="h-4 w-4" />}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm text-muted-foreground hidden sm:inline">{currentUser.email}</span>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" /> Logout
-              </Button>
-            </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage 
+                        src={userProfile?.avatarUrl || currentUser.photoURL || undefined} 
+                        alt={userProfile?.name || currentUser.displayName || currentUser.email || 'User'} 
+                        data-ai-hint="user avatar"
+                    />
+                    <AvatarFallback>
+                      {(userProfile?.name || currentUser.email || 'U').substring(0,1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{userProfile?.name || currentUser.displayName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {currentUser.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <>
               <Button variant="ghost" asChild size="sm">

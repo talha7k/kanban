@@ -13,8 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, User, Tag, Users, MessageSquare, Edit2, Trash2, Info, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { CalendarDays, User, Tag, Users, MessageSquare, Edit2, Trash2, Info, Loader2, Clock } from 'lucide-react';
+import { format, parseISO, isValid, differenceInDays, isToday, isPast } from 'date-fns';
 import { CommentItem } from './CommentItem';
 import { useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,7 +27,7 @@ interface TaskDetailsDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   task: Task | null;
   users: UserProfile[];
-  canManageTask: boolean; // Changed from isOwner
+  canManageTask: boolean; 
   onAddComment: (taskId: string, commentText: string) => Promise<void> | void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
@@ -39,7 +39,7 @@ export function TaskDetailsDialog({
   onOpenChange,
   task,
   users,
-  canManageTask, // Changed from isOwner
+  canManageTask, 
   onAddComment,
   onEditTask,
   onDeleteTask,
@@ -82,6 +82,24 @@ export function TaskDetailsDialog({
     }
   };
 
+  const getDueDateStatusText = (): string | null => {
+    if (!task.dueDate) return null;
+    const dueDate = parseISO(task.dueDate);
+    if (!isValid(dueDate)) return null;
+
+    const now = new Date();
+    const daysDiff = differenceInDays(dueDate, now);
+
+    if (isToday(dueDate)) return "Due today";
+    if (isPast(dueDate)) {
+      const daysOverdue = differenceInDays(now, dueDate);
+      return `Overdue by ${daysOverdue} day${daysOverdue > 1 ? 's' : ''}`;
+    }
+    return `${daysDiff + 1} day${daysDiff + 1 > 1 ? 's' : ''} left`;
+  };
+  const dueDateStatusText = getDueDateStatusText();
+
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
@@ -99,11 +117,18 @@ export function TaskDetailsDialog({
                 </div>
             )}
           </div>
-          {task.priority !== 'NONE' && (
-            <Badge variant={getPriorityBadgeVariant(task.priority)} className={`w-fit mt-1 ${task.priority === 'MEDIUM' ? 'bg-accent text-accent-foreground' : ''}`}>
-              Priority: {task.priority}
-            </Badge>
-          )}
+          <div className="flex items-center space-x-3 mt-1">
+            {task.priority !== 'NONE' && (
+                <Badge variant={getPriorityBadgeVariant(task.priority)} className={`w-fit ${task.priority === 'MEDIUM' ? 'bg-accent text-accent-foreground' : ''}`}>
+                Priority: {task.priority}
+                </Badge>
+            )}
+            {dueDateStatusText && (
+                <span className="text-xs text-muted-foreground flex items-center">
+                    <Clock className="h-3.5 w-3.5 mr-1.5" /> {dueDateStatusText}
+                </span>
+            )}
+          </div>
         </DialogHeader>
 
         <ScrollArea className="flex-1 -mx-6 px-6">
@@ -116,10 +141,10 @@ export function TaskDetailsDialog({
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {task.dueDate && (
+              {task.dueDate && isValid(parseISO(task.dueDate)) && (
                 <div className="flex items-center">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <strong>Due Date:</strong>&nbsp; <span className="text-foreground">{format(new Date(task.dueDate), 'MMM d, yyyy')}</span>
+                  <strong>Due Date:</strong>&nbsp; <span className="text-foreground">{format(parseISO(task.dueDate), 'MMM d, yyyy')}</span>
                 </div>
               )}
               {reporter && (
@@ -128,16 +153,16 @@ export function TaskDetailsDialog({
                   <strong>Reporter:</strong>&nbsp; <span className="text-foreground">{reporter.name}</span>
                 </div>
               )}
-               {task.createdAt && (
+               {task.createdAt && isValid(parseISO(task.createdAt)) && (
                 <div className="flex items-center">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <strong>Created:</strong>&nbsp; <span className="text-foreground">{format(new Date(task.createdAt), 'MMM d, yyyy HH:mm')}</span>
+                  <strong>Created:</strong>&nbsp; <span className="text-foreground">{format(parseISO(task.createdAt), 'MMM d, yyyy HH:mm')}</span>
                 </div>
               )}
-              {task.updatedAt && (
+              {task.updatedAt && isValid(parseISO(task.updatedAt)) && (
                 <div className="flex items-center">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <strong>Updated:</strong>&nbsp; <span className="text-foreground">{format(new Date(task.updatedAt), 'MMM d, yyyy HH:mm')}</span>
+                  <strong>Updated:</strong>&nbsp; <span className="text-foreground">{format(parseISO(task.updatedAt), 'MMM d, yyyy HH:mm')}</span>
                 </div>
               )}
             </div>

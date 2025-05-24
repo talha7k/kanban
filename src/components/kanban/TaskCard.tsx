@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Edit2, Trash2, MessageSquare, CalendarDays, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { Edit2, Trash2, MessageSquare, CalendarDays, Loader2, Clock } from 'lucide-react';
+import { format, formatDistanceToNowStrict, differenceInDays, isToday, isPast, isValid, parseISO } from 'date-fns';
 
 interface TaskCardProps {
   task: Task;
   users: UserProfile[];
-  canManageTask: boolean; // Changed from isOwner
+  canManageTask: boolean; 
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
@@ -31,6 +31,33 @@ export function TaskCard({ task, users, canManageTask, onDragStart, onEdit, onDe
       default: return 'default';
     }
   };
+
+  const getDueDateStatus = (): { text: string; colorClass: string; icon?: React.ReactNode } | null => {
+    if (!task.dueDate) return null;
+    
+    const dueDate = parseISO(task.dueDate);
+    if (!isValid(dueDate)) return null;
+
+    const now = new Date();
+    const daysDiff = differenceInDays(dueDate, now);
+
+    if (isToday(dueDate)) {
+      return { text: "Due today", colorClass: "text-orange-500 dark:text-orange-400", icon: <Clock className="h-3 w-3 mr-1" /> };
+    } else if (isPast(dueDate)) {
+      const daysOverdue = differenceInDays(now, dueDate);
+      return { text: `Overdue by ${daysOverdue}d`, colorClass: "text-red-500 dark:text-red-400", icon: <Clock className="h-3 w-3 mr-1" /> };
+    } else if (daysDiff < 0) { // Should be caught by isPast, but as a fallback
+       return { text: `Overdue`, colorClass: "text-red-500 dark:text-red-400", icon: <Clock className="h-3 w-3 mr-1" /> };
+    }
+     else if (daysDiff === 0) { // If due date is today but not yet past
+      return { text: `Due today`, colorClass: "text-orange-500 dark:text-orange-400", icon: <Clock className="h-3 w-3 mr-1" /> };
+    }
+    else {
+      return { text: `${daysDiff + 1}d left`, colorClass: "text-green-600 dark:text-green-400", icon: <Clock className="h-3 w-3 mr-1" /> };
+    }
+  };
+
+  const dueDateStatus = getDueDateStatus();
 
   return (
     <Card
@@ -76,9 +103,9 @@ export function TaskCard({ task, users, canManageTask, onDragStart, onEdit, onDe
                 <MessageSquare className="h-3 w-3 mr-1" /> {task.comments.length}
               </span>
             )}
-            {task.dueDate && (
-               <span className="flex items-center" title={`Due: ${format(new Date(task.dueDate), 'MMM d, yyyy')}`}>
-                <CalendarDays className="h-3 w-3 mr-1" /> {format(new Date(task.dueDate), 'MMM d')}
+            {dueDateStatus && (
+               <span className={`flex items-center ${dueDateStatus.colorClass}`} title={`Due: ${task.dueDate ? format(parseISO(task.dueDate), 'MMM d, yyyy') : 'N/A'}`}>
+                {dueDateStatus.icon} {dueDateStatus.text}
               </span>
             )}
           </div>

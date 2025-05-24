@@ -58,7 +58,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   }, [initialProject]);
 
   const isOwner = useMemo(() => currentUser?.uid === projectData.ownerId, [currentUser, projectData.ownerId]);
-  const currentUserProjectRole = useMemo(()_currentProjectRole(): UserProjectRole | null => {
+  const currentUserProjectRole = useMemo((): UserProjectRole | null => {
     if (!currentUser || !projectData.memberRoles) return null;
     return projectData.memberRoles[currentUser.uid] || null;
   }, [currentUser, projectData.memberRoles]);
@@ -358,7 +358,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             column={column}
             tasks={projectData.tasks}
             users={users}
-            canManageTasks={canManageTasks}
+            canManageTasks={canManageTasks} // Pass down the broader permission
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}

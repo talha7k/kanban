@@ -6,7 +6,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as 
 import { auth } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { createUserProfileDocument, getUserProfile } from '@/lib/firebaseService';
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +17,7 @@ interface AuthContextType {
   signup: (email: string, password: string, displayName?: string) => Promise<FirebaseUser | null>;
   login: (email: string, password: string) => Promise<FirebaseUser | null>;
   logout: () => Promise<void>;
+  refreshUserProfile: () => Promise<void>; // New function to refresh user profile
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,37 +41,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const { toast } = useToast();
 
+  const fetchUserProfile = useCallback(async (user: FirebaseUser | null) => {
+    if (user) {
+      try {
+        const profile = await getUserProfile(user.uid);
+        setUserProfile(profile);
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+        setUserProfile(null); 
+        toast({ variant: "destructive", title: "Profile Error", description: "Could not load your user profile." });
+      }
+    } else {
+      setUserProfile(null);
+    }
+  }, [toast]);
+
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
-      if (user) {
-        setCurrentUser(user);
-        try {
-          const profile = await getUserProfile(user.uid);
-          setUserProfile(profile);
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-          setUserProfile(null); // Ensure profile is null on error
-          toast({ variant: "destructive", title: "Profile Error", description: "Could not load your user profile." });
-        }
-      } else {
-        setCurrentUser(null);
-        setUserProfile(null);
-      }
+      setCurrentUser(user);
+      await fetchUserProfile(user);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [toast]);
+  }, [fetchUserProfile]);
+
+  const refreshUserProfile = useCallback(async () => {
+    if (currentUser) {
+        setLoading(true);
+        await fetchUserProfile(currentUser);
+        setLoading(false);
+    }
+  }, [currentUser, fetchUserProfile]);
 
   const signup = async (email: string, password: string, displayName?: string): Promise<FirebaseUser | null> => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
-      // Create a user profile document in Firestore
       const profileData = displayName ? { name: displayName } : {};
+      // createUserProfileDocument will be called, and then onAuthStateChanged will fetch it
       await createUserProfileDocument(firebaseUser, profileData);
-      // The onAuthStateChanged listener will pick up the new user and set currentUser and userProfile
+      // No need to call fetchUserProfile here, onAuthStateChanged will trigger
       return firebaseUser;
     } catch (error) {
       const authError = error as AuthError;
@@ -103,7 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await firebaseSignOut(auth);
       // onAuthStateChanged listener will set currentUser and userProfile to null
-      router.push('/login');
+      router.push('/login'); // Explicitly redirect
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch (error) {
       const authError = error as AuthError;
@@ -111,6 +124,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       toast({ variant: "destructive", title: "Logout Failed", description: authError.message || "Could not log out." });
       throw authError;
     } finally {
+      // Ensure user states are cleared immediately on logout, onAuthStateChanged will also run
+      setCurrentUser(null);
+      setUserProfile(null);
       setLoading(false);
     }
   };
@@ -122,7 +138,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signup,
     login,
     logout,
+    refreshUserProfile,
   };
 
-  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+  // Render children only when initial auth check is complete
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
