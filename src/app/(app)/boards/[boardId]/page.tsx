@@ -1,12 +1,13 @@
-import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 
-// This page could fetch board data based on boardId in a real app.
-// For now, KanbanBoard component uses mock data.
-export default function BoardPage({ params }: { params: { boardId: string } }) {
-  return (
-    <div className="h-full">
-      {/* You can use params.boardId to fetch specific board data later */}
-      <KanbanBoard />
-    </div>
-  );
+// This file is deprecated and replaced by src/app/(app)/projects/[projectId]/page.tsx
+// Keeping it temporarily to avoid build errors if old links are hit,
+// but it should be removed once all links are updated.
+// Or, redirect to the new projects page.
+
+import { redirect } from 'next/navigation';
+
+export default function DeprecatedBoardPage({ params }: { params: { boardId: string } }) {
+  // Redirect to a default project or a generic projects listing page if one exists
+  // For now, redirecting to a sample project ID.
+  redirect(`/projects/project-alpha`); 
 }

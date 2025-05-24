@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { KanbanIcon } from '@/components/icons/KanbanIcon';
@@ -10,11 +11,12 @@ export default function HomePage() {
         Welcome to KanbanAI
       </h1>
       <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
-        Streamline your team's workflow with our intelligent Kanban board. Visualize tasks, track progress, and collaborate effectively.
+        Streamline your team's workflow with our intelligent Kanban board. Organize tasks by project, visualize progress, and collaborate effectively.
       </p>
       <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-transform hover:scale-105">
-        <Link href="/boards/main">
-          Go to Your Board
+        {/* Link to a default mock project */}
+        <Link href="/projects/project-alpha"> 
+          Go to Project Alpha
         </Link>
       </Button>
       <div className="mt-16 p-6 border rounded-lg shadow-xl bg-card max-w-md">

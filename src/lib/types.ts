@@ -1,13 +1,38 @@
+
+export type UserId = string;
+export type ProjectId = string;
+export type TeamId = string;
 export type TaskId = string;
 export type ColumnId = string;
 
-export interface Comment {
-  id: string;
-  userId: string; // For simplicity, username directly. In a real app, this would be a user ID.
-  userName: string; 
+export interface UserProfile {
+  id: UserId;
+  name: string;
   avatarUrl?: string;
-  content: string;
-  createdAt: string; // ISO string date
+  teamIds?: TeamId[]; // User can be part of multiple teams
+}
+
+export interface Team {
+  id: TeamId;
+  name: string;
+  description?: string;
+  memberUids: UserId[];
+  adminUids?: UserId[];
+  projectIds?: ProjectId[]; // Projects associated with this team
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
+}
+
+export interface Project {
+  id: ProjectId;
+  name: string;
+  description?: string;
+  teamId?: TeamId; // A project can belong to a team
+  ownerId: UserId; // User who created the project
+  columns: Column[]; // Columns are now part of a project
+  tasks: Task[]; // Tasks are now part of a project
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
 }
 
 export interface Task {
@@ -15,10 +40,11 @@ export interface Task {
   title: string;
   description?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'NONE';
-  columnId: ColumnId;
+  projectId: ProjectId; 
+  columnId: ColumnId; 
   order: number; // Order within the column
-  assigneeUids?: string[]; // User IDs. For mock, can be names.
-  reporterId?: string; // User ID. For mock, can be a name.
+  assigneeUids?: UserId[]; 
+  reporterId?: UserId; 
   dueDate?: string; // YYYY-MM-DD
   tags?: string[];
   comments?: Comment[];
@@ -30,24 +56,19 @@ export interface Task {
 export interface Column {
   id: ColumnId;
   title: string;
-  taskIds: TaskId[];
-  order: number; // Order of the column on the board
+  taskIds: TaskId[]; // Task IDs currently in this column for this project
+  order: number; // Order of the column within the project's board
 }
 
-export interface Board {
+export interface Comment {
   id: string;
-  name: string;
-  columns: Column[];
-  tasks: Task[];
-}
-
-export interface UserProfile {
-  id: string;
-  name: string;
+  userId: UserId;
+  userName: string; 
   avatarUrl?: string;
+  content: string;
+  createdAt: string; // ISO string date
 }
 
-// For AI Priority Suggestion
 export interface AIPrioritySuggestion {
   suggestedPriority: 'LOW' | 'MEDIUM' | 'HIGH';
   reasoning: string;

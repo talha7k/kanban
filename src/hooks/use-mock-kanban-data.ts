@@ -1,98 +1,201 @@
-import type { Board, Column, Task, UserProfile } from '@/lib/types';
+
+import type { Project, Team, UserProfile, Column, Task } from '@/lib/types';
 import { useState, useEffect } from 'react';
 
-const initialUsers: UserProfile[] = [
-  { id: 'user1', name: 'Alice Wonderland', avatarUrl: 'https://placehold.co/40x40.png?text=AW' },
-  { id: 'user2', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/40x40.png?text=BB' },
-  { id: 'user3', name: 'Charlie Brown', avatarUrl: 'https://placehold.co/40x40.png?text=CB' },
+const mockUsers: UserProfile[] = [
+  { id: 'user1', name: 'Alice Wonderland', avatarUrl: 'https://placehold.co/40x40.png?text=AW', teamIds: ['team-alpha'] },
+  { id: 'user2', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/40x40.png?text=BB', teamIds: ['team-alpha', 'team-beta'] },
+  { id: 'user3', name: 'Charlie Brown', avatarUrl: 'https://placehold.co/40x40.png?text=CB', teamIds: ['team-beta'] },
+  { id: 'user4', name: 'Diana Prince', avatarUrl: 'https://placehold.co/40x40.png?text=DP' }, // No team
 ];
 
-const initialTasks: Task[] = [
+const mockTeams: Team[] = [
   {
-    id: 'task-1',
-    title: 'Setup project repository',
-    description: 'Initialize Git repo and push to remote.',
+    id: 'team-alpha',
+    name: 'Alpha Squad',
+    description: 'Core development team.',
+    memberUids: ['user1', 'user2'],
+    adminUids: ['user1'],
+    projectIds: ['project-alpha', 'project-gamma'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'team-beta',
+    name: 'Beta Testers Inc.',
+    description: 'QA and testing specialists.',
+    memberUids: ['user2', 'user3'],
+    adminUids: ['user3'],
+    projectIds: ['project-beta'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+const projectAlphaTasks: Task[] = [
+  {
+    id: 'task-pA-1',
+    projectId: 'project-alpha',
+    title: 'Setup project repository (Alpha)',
+    description: 'Initialize Git repo and push to remote for Project Alpha.',
     priority: 'HIGH',
-    columnId: 'col-1',
+    columnId: 'col-pA-1', // To Do
     order: 0,
     assigneeUids: ['user1'],
     reporterId: 'user2',
-    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days from now
+    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     tags: ['setup', 'devops'],
     comments: [
-      { id: 'comment-1', userId: 'user2', userName: 'Bob The Builder', content: 'Almost done!', createdAt: new Date().toISOString(), avatarUrl: 'https://placehold.co/32x32.png?text=BB' },
+      { id: 'comment-pA-1', userId: 'user2', userName: 'Bob The Builder', content: 'Almost done with Alpha repo!', createdAt: new Date().toISOString(), avatarUrl: mockUsers.find(u=>u.id==='user2')?.avatarUrl },
     ],
     dependentTaskTitles: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-2',
-    title: 'Design landing page mockups',
-    description: 'Create Figma mockups for the main landing page.',
+    id: 'task-pA-2',
+    projectId: 'project-alpha',
+    title: 'Design landing page mockups (Alpha)',
+    description: 'Create Figma mockups for the main landing page of Alpha.',
     priority: 'MEDIUM',
-    columnId: 'col-1',
+    columnId: 'col-pA-1', // To Do
     order: 1,
-    assigneeUids: ['user3'],
+    assigneeUids: ['user3'], // Charlie can be assigned even if not in Alpha Squad for this example
     reporterId: 'user1',
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     tags: ['design', 'ui'],
     dependentTaskTitles: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-3',
-    title: 'Implement authentication module',
-    description: 'Integrate Firebase Auth for user login and registration.',
+    id: 'task-pA-3',
+    projectId: 'project-alpha',
+    title: 'Implement authentication (Alpha)',
+    description: 'Integrate Firebase Auth for Alpha project.',
     priority: 'HIGH',
-    columnId: 'col-2',
+    columnId: 'col-pA-2', // In Progress
     order: 0,
     assigneeUids: ['user1', 'user2'],
     reporterId: 'user3',
-    dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 10 days from now
+    dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     tags: ['feature', 'backend'],
-    dependentTaskTitles: ['Setup project repository'],
+    dependentTaskTitles: ['Setup project repository (Alpha)'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+const projectAlphaColumns: Column[] = [
+  { id: 'col-pA-1', title: 'To Do (Alpha)', taskIds: ['task-pA-1', 'task-pA-2'], order: 0 },
+  { id: 'col-pA-2', title: 'In Progress (Alpha)', taskIds: ['task-pA-3'], order: 1 },
+  { id: 'col-pA-3', title: 'Done (Alpha)', taskIds: [], order: 2 },
+];
+
+
+const projectBetaTasks: Task[] = [
+   {
+    id: 'task-pB-1',
+    projectId: 'project-beta',
+    title: 'Market Research for Beta Product',
+    description: 'Analyze competitor landscape for the Beta product line.',
+    priority: 'HIGH',
+    columnId: 'col-pB-1', // To Do
+    order: 0,
+    assigneeUids: ['user3'],
+    reporterId: 'user2',
+    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    tags: ['research', 'strategy'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+   {
+    id: 'task-pB-2',
+    projectId: 'project-beta',
+    title: 'Develop Beta Prototype',
+    description: 'Build the first working prototype for the Beta product.',
+    priority: 'MEDIUM',
+    columnId: 'col-pB-2', // In Progress
+    order: 0,
+    assigneeUids: ['user2'],
+    reporterId: 'user3',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+const projectBetaColumns: Column[] = [
+  { id: 'col-pB-1', title: 'Planning (Beta)', taskIds: ['task-pB-1'], order: 0 },
+  { id: 'col-pB-2', title: 'Development (Beta)', taskIds: ['task-pB-2'], order: 1 },
+  { id: 'col-pB-3', title: 'Testing (Beta)', taskIds: [], order: 2 },
+  { id: 'col-pB-4', title: 'Launched (Beta)', taskIds: [], order: 3 },
+];
+
+
+const mockProjects: Project[] = [
+  {
+    id: 'project-alpha',
+    name: 'Project Alpha Development',
+    description: 'The main development stream for product Alpha.',
+    ownerId: 'user1',
+    teamId: 'team-alpha',
+    columns: projectAlphaColumns,
+    tasks: projectAlphaTasks,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'task-4',
-    title: 'Write API documentation',
-    description: 'Document all backend API endpoints using Swagger/OpenAPI.',
-    priority: 'LOW',
-    columnId: 'col-3',
-    order: 0,
-    assigneeUids: ['user2'],
-    reporterId: 'user1',
-    dependentTaskTitles: ['Implement authentication module'],
+    id: 'project-beta',
+    name: 'Project Beta Initiative',
+    description: 'New product initiative Beta.',
+    ownerId: 'user3',
+    teamId: 'team-beta',
+    columns: projectBetaColumns,
+    tasks: projectBetaTasks,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
+  {
+    id: 'project-gamma', // Example of a project with no tasks/columns yet
+    name: 'Project Gamma (Upcoming)',
+    description: 'Future project, currently in planning.',
+    ownerId: 'user1',
+    teamId: 'team-alpha',
+    columns: [
+        { id: 'col-pG-1', title: 'Backlog', taskIds: [], order: 0 },
+        { id: 'col-pG-2', title: 'Selected for Dev', taskIds: [], order: 1 },
+    ],
+    tasks: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
 ];
 
-const initialColumns: Column[] = [
-  { id: 'col-1', title: 'To Do', taskIds: ['task-1', 'task-2'], order: 0 },
-  { id: 'col-2', title: 'In Progress', taskIds: ['task-3'], order: 1 },
-  { id: 'col-3', title: 'Done', taskIds: ['task-4'], order: 2 },
-];
+export interface MockKanbanDataType {
+  users: UserProfile[];
+  teams: Team[];
+  projects: Project[];
+  getProjectById: (projectId: string) => Project | undefined;
+  // Add setters if direct manipulation of mock data is needed from components,
+  // though this hook primarily serves initial data.
+  // setProjects: React.Dispatch<React.SetStateAction<Project[]>>; 
+}
 
-const initialBoard: Board = {
-  id: 'main',
-  name: 'Main Project Board',
-  columns: initialColumns,
-  tasks: initialTasks,
-};
+export function useMockKanbanData(): MockKanbanDataType {
+  const [users, setUsersState] = useState<UserProfile[]>(mockUsers);
+  const [teams, setTeamsState] = useState<Team[]>(mockTeams);
+  const [projects, setProjectsState] = useState<Project[]>(mockProjects);
 
-export function useMockKanbanData() {
-  const [board, setBoard] = useState<Board | null>(null);
-  const [users, setUsers] = useState<UserProfile[]>([]);
-
+  // Simulate fetching data - in a real app, this would be an API call
   useEffect(() => {
-    // Simulate fetching data
-    setBoard(initialBoard);
-    setUsers(initialUsers);
+    setUsersState(mockUsers);
+    setTeamsState(mockTeams);
+    setProjectsState(mockProjects);
   }, []);
 
-  return { board, setBoard, users };
+  const getProjectById = (projectId: string): Project | undefined => {
+    return projects.find(p => p.id === projectId);
+  };
+
+  return { users, teams, projects, getProjectById };
 }

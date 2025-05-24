@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Column, Task, UserProfile } from '@/lib/types';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 
 interface KanbanColumnProps {
   column: Column;
-  tasks: Task[];
+  tasks: Task[]; // These are already filtered tasks for the current project/column context
   users: UserProfile[];
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
@@ -20,7 +21,7 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({
   column,
-  tasks,
+  tasks, // Expects tasks already filtered for this specific column by the parent (KanbanBoard)
   users,
   onDragStart,
   onDragOver,
@@ -30,6 +31,7 @@ export function KanbanColumn({
   onDeleteTask,
   onViewTaskDetails,
 }: KanbanColumnProps) {
+  // KanbanBoard now filters tasks by project. Here, we filter by columnId for this specific column.
   const columnTasks = tasks
     .filter(task => task.columnId === column.id)
     .sort((a, b) => a.order - b.order);

@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { KanbanIcon } from '@/components/icons/KanbanIcon';
 import { Button } from '@/components/ui/button';
@@ -7,14 +8,15 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
-        <Link href="/boards/main" className="mr-6 flex items-center space-x-2">
+        {/* Link to a default mock project */}
+        <Link href="/projects/project-alpha" className="mr-6 flex items-center space-x-2">
           <KanbanIcon className="h-6 w-6 text-primary" />
           <span className="font-bold sm:inline-block">
             KanbanAI
           </span>
         </Link>
         <nav className="flex flex-1 items-center space-x-4">
-          {/* Add navigation links here if needed */}
+          {/* Add navigation links here if needed, e.g., to a projects list page */}
         </nav>
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="icon" asChild>
