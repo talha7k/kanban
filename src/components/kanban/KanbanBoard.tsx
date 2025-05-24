@@ -69,7 +69,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
   const handleAddTask = async (taskData: TaskFormData, columnId: string) => {
     if (!userProfile) {
-        toast({ variant: "destructive", title: "Error", description: "You must be logged in." });
+        toast({ variant: "destructive", title: "User Profile Error", description: "User profile not available. Cannot add task." });
         return;
     }
     setIsSubmitting(true);
@@ -151,7 +151,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
   const handleAddComment = async (taskId: string, commentText: string) => {
      if (!userProfile) {
-        toast({ variant: "destructive", title: "Error", description: "You must be logged in to comment." });
+        toast({ variant: "destructive", title: "User Profile Error", description: "User profile not available. Cannot add comment." });
         return;
     }
     setIsSubmitting(true); // Consider a more specific loading state for comments
@@ -178,6 +178,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         return { ...prevProject!, tasks: updatedTasks };
       });
       toast({ title: "Comment Added" });
+      // Clear comment field in TaskDetailsDialog after successful submission
+      // This is typically handled by the TaskDetailsDialog itself or by passing a callback.
+      // For now, the parent (KanbanBoard) will re-render TaskDetailsDialog with updated task (and thus comments)
     } catch (error) {
       console.error("Error adding comment:", error);
       toast({ variant: "destructive", title: "Error Adding Comment", description: error instanceof Error ? error.message : "Could not add comment." });
@@ -217,7 +220,17 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         const updatedTasks = currentProjectData.tasks.map(task => 
             task.id === sourceTaskId ? { ...task, columnId: targetColumnId, order: newOrder, updatedAt: new Date().toISOString() } : task
         );
-        return { ...currentProjectData, tasks: updatedTasks };
+        // Re-order tasks within the target column (and source column if applicable)
+        // This is a simplified re-ordering logic for optimistic update.
+        // A more robust solution would handle different drop positions within the column.
+        const finalTasks = updatedTasks
+            .filter(t => t.columnId === targetColumnId)
+            .sort((a,b) => a.order - b.order)
+            .map((task, index) => ({ ...task, order: index }));
+        
+        const otherTasks = updatedTasks.filter(t => t.columnId !== targetColumnId);
+        
+        return { ...currentProjectData, tasks: [...otherTasks, ...finalTasks] };
     });
 
 
@@ -326,3 +339,5 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     </div>
   );
 }
+
+  
