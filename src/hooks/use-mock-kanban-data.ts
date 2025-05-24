@@ -3,10 +3,10 @@ import type { Project, UserProfile, Column, Task, NewProjectData } from '@/lib/t
 import { useState, useEffect, useCallback } from 'react';
 
 const mockUsers: UserProfile[] = [
-  { id: 'user1', name: 'Alice Wonderland', avatarUrl: 'https://placehold.co/40x40.png?text=AW' },
-  { id: 'user2', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/40x40.png?text=BB' },
-  { id: 'user3', name: 'Charlie Brown', avatarUrl: 'https://placehold.co/40x40.png?text=CB' },
-  { id: 'user4', name: 'Diana Prince', avatarUrl: 'https://placehold.co/40x40.png?text=DP' },
+  { id: 'user1', name: 'Alice Wonderland', email: 'alice@example.com', avatarUrl: 'https://placehold.co/40x40.png?text=AW' },
+  { id: 'user2', name: 'Bob The Builder', email: 'bob@example.com', avatarUrl: 'https://placehold.co/40x40.png?text=BB' },
+  { id: 'user3', name: 'Charlie Brown', email: 'charlie@example.com', avatarUrl: 'https://placehold.co/40x40.png?text=CB' },
+  { id: 'user4', name: 'Diana Prince', email: 'diana@example.com', avatarUrl: 'https://placehold.co/40x40.png?text=DP' },
 ];
 
 const projectAlphaTasks: Task[] = [
@@ -149,14 +149,18 @@ export interface MockKanbanDataType {
   users: UserProfile[];
   projects: Project[];
   getProjectById: (projectId: string) => Project | undefined;
-  addProject: (projectData: NewProjectData) => Project;
+  addProject: (projectData: NewProjectData, ownerId?: UserId) => Project; // ownerId can be provided
 }
 
+// Note: This hook manages MOCK data. Authenticated user from Firebase Auth is separate for now.
+// Future work could involve fetching/merging this data with a real backend (Firestore).
 export function useMockKanbanData(): MockKanbanDataType {
   const [users, setUsersState] = useState<UserProfile[]>(mockUsers);
   const [projects, setProjectsState] = useState<Project[]>(initialMockProjects);
 
   useEffect(() => {
+    // This effect is mainly for re-initializing if needed or if mock data was external.
+    // For now, it just ensures initial state is set.
     setUsersState(mockUsers);
     setProjectsState(initialMockProjects);
   }, []);
@@ -165,9 +169,10 @@ export function useMockKanbanData(): MockKanbanDataType {
     return projects.find(p => p.id === projectId);
   }, [projects]);
 
-  const addProject = useCallback((projectData: NewProjectData): Project => {
+  const addProject = useCallback((projectData: NewProjectData, ownerId?: UserId): Project => {
     const newProjectId = `project-${Date.now()}`;
-    const defaultOwner = users[0]?.id || 'user-unknown'; // Default to first user or a fallback
+    // Use provided ownerId, or default to first mock user if no auth integration yet
+    const projectOwnerId = ownerId || users[0]?.id || 'user-unknown'; 
 
     const defaultColumns: Column[] = [
       { id: `col-${newProjectId}-1`, title: 'To Do', taskIds: [], order: 0 },
@@ -179,7 +184,7 @@ export function useMockKanbanData(): MockKanbanDataType {
       id: newProjectId,
       name: projectData.name,
       description: projectData.description || '',
-      ownerId: defaultOwner,
+      ownerId: projectOwnerId,
       columns: defaultColumns,
       tasks: [],
       createdAt: new Date().toISOString(),
@@ -188,7 +193,7 @@ export function useMockKanbanData(): MockKanbanDataType {
 
     setProjectsState(prevProjects => [...prevProjects, newProject]);
     return newProject;
-  }, [users]);
+  }, [users]); // users dependency in case default owner logic changes
 
   return { users, projects, getProjectById, addProject };
 }

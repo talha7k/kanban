@@ -1,13 +1,14 @@
 
-export type UserId = string;
+export type UserId = string; // Can now be Firebase UID
 export type ProjectId = string;
 export type TaskId = string;
 export type ColumnId = string;
 
 export interface UserProfile {
-  id: UserId;
-  name: string;
-  avatarUrl?: string;
+  id: UserId; // Firebase UID or mock ID
+  name: string; // Firebase displayName or mock name
+  email?: string; // Firebase email
+  avatarUrl?: string; // Firebase photoURL or mock avatar
 }
 
 export interface Project {
@@ -21,7 +22,6 @@ export interface Project {
   updatedAt: string; // ISO
 }
 
-// Data for creating a new project, before it has an ID, default columns, etc.
 export interface NewProjectData {
   name: string;
   description?: string;
