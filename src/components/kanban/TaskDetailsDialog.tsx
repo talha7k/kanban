@@ -27,11 +27,11 @@ interface TaskDetailsDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   task: Task | null;
   users: UserProfile[];
-  isOwner: boolean;
-  onAddComment: (taskId: string, commentText: string) => Promise<void> | void; // Can be async
+  canManageTask: boolean; // Changed from isOwner
+  onAddComment: (taskId: string, commentText: string) => Promise<void> | void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
-  isSubmittingComment?: boolean; // Specific loading state for comment submission
+  isSubmittingComment?: boolean;
 }
 
 export function TaskDetailsDialog({
@@ -39,7 +39,7 @@ export function TaskDetailsDialog({
   onOpenChange,
   task,
   users,
-  isOwner,
+  canManageTask, // Changed from isOwner
   onAddComment,
   onEditTask,
   onDeleteTask,
@@ -51,12 +51,10 @@ export function TaskDetailsDialog({
 
   useEffect(() => {
     if (task?.comments) {
-      // Sort comments by date, most recent first
       setComments([...task.comments].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } else {
       setComments([]);
     }
-     // Clear new comment input when dialog opens or task changes
     if (isOpen) {
         setNewComment('');
     }
@@ -65,7 +63,7 @@ export function TaskDetailsDialog({
   if (!isOpen || !task) return null;
 
   const assignees = task.assigneeUids?.map(uid => users.find(u => u.id === uid)).filter(Boolean) as UserProfile[] || [];
-  const reporter = users.find(u => u.id === task.reporterId); // Assuming reporterId is on task
+  const reporter = users.find(u => u.id === task.reporterId);
 
   const handleAddCommentSubmit = async () => {
     if (newComment.trim() === '') {
@@ -73,9 +71,6 @@ export function TaskDetailsDialog({
         return;
     }
     await onAddComment(task.id, newComment);
-    // Parent (KanbanBoard) should handle optimistic update or refetch.
-    // If successful, the `task` prop will update, and useEffect will refresh comments.
-    // setNewComment(''); // Clear after successful submission by parent
   };
 
   const getPriorityBadgeVariant = (priority: Task['priority']) => {
@@ -93,16 +88,16 @@ export function TaskDetailsDialog({
         <DialogHeader>
           <div className="flex justify-between items-start">
             <DialogTitle className="text-2xl font-bold text-foreground">{task.title}</DialogTitle>
-            <div className="flex space-x-2">
-                <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment}>
-                    <Edit2 className="h-4 w-4" />
-                </Button>
-                {isOwner && (
-                  <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id); /* onOpenChange(false) handled by parent if delete successful */}} aria-label="Delete task" disabled={isSubmittingComment}>
-                      <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-            </div>
+            {canManageTask && (
+                <div className="flex space-x-2">
+                    <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment}>
+                        <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id);}} aria-label="Delete task" disabled={isSubmittingComment}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
           </div>
           {task.priority !== 'NONE' && (
             <Badge variant={getPriorityBadgeVariant(task.priority)} className={`w-fit mt-1 ${task.priority === 'MEDIUM' ? 'bg-accent text-accent-foreground' : ''}`}>
@@ -110,8 +105,8 @@ export function TaskDetailsDialog({
             </Badge>
           )}
         </DialogHeader>
-        
-        <ScrollArea className="flex-1 -mx-6 px-6"> {/* Negative margin + padding trick for full-bleed scroll content */}
+
+        <ScrollArea className="flex-1 -mx-6 px-6">
           <div className="space-y-4 py-4">
             {task.description && (
               <div>
@@ -172,7 +167,7 @@ export function TaskDetailsDialog({
                 </div>
               </div>
             )}
-            
+
             {task.dependentTaskTitles && task.dependentTaskTitles.length > 0 && (
               <div>
                 <h3 className="font-semibold text-sm mb-1 text-muted-foreground flex items-center"><Info className="h-4 w-4 mr-2" />Dependent Tasks</h3>
@@ -197,7 +192,7 @@ export function TaskDetailsDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex-col sm:flex-row pt-4 border-t mt-auto"> {/* mt-auto pushes footer to bottom if content is short */}
+        <DialogFooter className="flex-col sm:flex-row pt-4 border-t mt-auto">
             <Textarea
                 placeholder="Add a comment..."
                 value={newComment}

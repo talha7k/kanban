@@ -4,12 +4,14 @@ export type ProjectId = string;
 export type TaskId = string;
 export type ColumnId = string;
 
+export type UserProjectRole = 'manager' | 'member';
+
 export interface UserProfile {
   id: UserId; // Firebase UID or mock ID
   name: string; // Firebase displayName or mock name
   email?: string; // Firebase email
   avatarUrl?: string; // Firebase photoURL or mock avatar
-  role: 'admin' | 'staff'; // New field for user role
+  role: 'admin' | 'staff'; // Global role for the user in the system
   title?: string; // New field for user title/position
   createdAt?: string; // ISO string, from Firestore
 }
@@ -22,6 +24,7 @@ export interface Project {
   columns: Column[]; // Stored with the project
   tasks: Task[];     // Stored with the project
   memberIds?: UserId[]; // Users who are members of this project
+  memberRoles?: { [key: UserId]: UserProjectRole }; // Project-specific roles for members
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }
@@ -57,7 +60,6 @@ export type NewTaskData = Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updated
 export interface Column {
   id: ColumnId;
   title: string;
-  // taskIds: TaskId[]; // Task IDs are now derived by filtering project.tasks by columnId
   order: number; // Order of the column within the project's board
 }
 
@@ -81,8 +83,6 @@ export interface AIPrioritySuggestion {
 
 // Firestore specific types
 export interface ProjectDocument extends Omit<Project, 'id' | 'tasks' | 'columns'> {
-  // tasks and columns might be subcollections or handled differently depending on final structure
-  // For now, assuming they might be part of the document for simplicity in this update
   tasks: Task[];
   columns: Column[];
 }
@@ -90,4 +90,3 @@ export interface ProjectDocument extends Omit<Project, 'id' | 'tasks' | 'columns
 export interface UserDocument extends Omit<UserProfile, 'id'> {
   // id is the document ID in Firestore
 }
-

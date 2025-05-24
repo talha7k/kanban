@@ -12,15 +12,15 @@ import { format } from 'date-fns';
 interface TaskCardProps {
   task: Task;
   users: UserProfile[];
-  isOwner: boolean;
+  canManageTask: boolean; // Changed from isOwner
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
   onViewDetails: (task: Task) => void;
-  isSubmitting?: boolean; // To disable buttons during global operations
+  isSubmitting?: boolean;
 }
 
-export function TaskCard({ task, users, isOwner, onDragStart, onEdit, onDelete, onViewDetails, isSubmitting }: TaskCardProps) {
+export function TaskCard({ task, users, canManageTask, onDragStart, onEdit, onDelete, onViewDetails, isSubmitting }: TaskCardProps) {
   const assignees = task.assigneeUids?.map(uid => users.find(u => u.id === uid)).filter(Boolean) as UserProfile[] || [];
 
   const getPriorityBadgeVariant = (priority: Task['priority']) => {
@@ -33,8 +33,8 @@ export function TaskCard({ task, users, isOwner, onDragStart, onEdit, onDelete, 
   };
 
   return (
-    <Card 
-      draggable={!isSubmitting} // Prevent dragging during submissions
+    <Card
+      draggable={!isSubmitting}
       onDragStart={(e) => !isSubmitting && onDragStart(e, task.id)}
       className={`mb-3 shadow-md hover:shadow-lg transition-shadow duration-200 bg-card ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
       onClick={() => !isSubmitting && onViewDetails(task)}
@@ -85,27 +85,29 @@ export function TaskCard({ task, users, isOwner, onDragStart, onEdit, onDelete, 
         </div>
 
         <div className="flex space-x-1 w-full justify-end mt-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7" 
-            onClick={(e) => { e.stopPropagation(); onEdit(task); }} 
-            aria-label="Edit task"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit2 className="h-4 w-4" />}
-          </Button>
-          {isOwner && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive" 
-              onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} 
-              aria-label="Delete task"
-              disabled={isSubmitting}
-            >
-               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            </Button>
+          {canManageTask && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => { e.stopPropagation(); onEdit(task); }}
+                aria-label="Edit task"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit2 className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+                aria-label="Delete task"
+                disabled={isSubmitting}
+              >
+                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              </Button>
+            </>
           )}
         </div>
       </CardFooter>

@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 
 interface KanbanColumnProps {
   column: Column;
-  tasks: Task[]; 
+  tasks: Task[];
   users: UserProfile[];
-  isOwner: boolean;
+  canManageTasks: boolean; // Changed from isOwner
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
@@ -18,14 +18,14 @@ interface KanbanColumnProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onViewTaskDetails: (task: Task) => void;
-  isSubmitting?: boolean; // To disable "Add Task" button during operations
+  isSubmitting?: boolean;
 }
 
 export function KanbanColumn({
   column,
   tasks,
   users,
-  isOwner,
+  canManageTasks, // Changed from isOwner
   onDragStart,
   onDragOver,
   onDrop,
@@ -56,7 +56,7 @@ export function KanbanColumn({
             key={task.id}
             task={task}
             users={users}
-            isOwner={isOwner}
+            canManageTask={canManageTasks} // Pass down the broader permission
             onDragStart={onDragStart}
             onEdit={onEditTask}
             onDelete={onDeleteTask}
@@ -70,9 +70,9 @@ export function KanbanColumn({
           </div>
         )}
       </div>
-      <Button 
-        variant="ghost" 
-        className="w-full mt-3 text-muted-foreground hover:text-foreground justify-start" 
+      <Button
+        variant="ghost"
+        className="w-full mt-3 text-muted-foreground hover:text-foreground justify-start"
         onClick={() => onAddTask(column.id)}
         disabled={isSubmitting}
       >

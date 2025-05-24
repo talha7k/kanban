@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Project, Column, Task, UserProfile, ColumnId, TaskId, NewTaskData, NewCommentData } from '@/lib/types';
+import type { Project, Column, Task, UserProfile, ColumnId, TaskId, NewTaskData, NewCommentData, UserProjectRole } from '@/lib/types';
 import { KanbanColumn } from './KanbanColumn';
 import { AddTaskDialog } from './AddTaskDialog';
 import { EditTaskDialog } from './EditTaskDialog';
@@ -21,10 +21,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  addTaskToProject, 
-  updateTaskInProject, 
-  deleteTaskFromProject, 
+import {
+  addTaskToProject,
+  updateTaskInProject,
+  deleteTaskFromProject,
   moveTaskInProject,
   addCommentToTask,
   getProjectById // For re-fetching project data
@@ -33,8 +33,8 @@ import { useAuth } from '@/hooks/useAuth';
 
 
 interface KanbanBoardProps {
-  project: Project; 
-  users: UserProfile[]; 
+  project: Project;
+  users: UserProfile[];
 }
 
 export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps) {
@@ -48,9 +48,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const [draggedTaskId, setDraggedTaskId] = useState<TaskId | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDeleteId, setTaskToDeleteId] = useState<TaskId | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); 
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { currentUser, userProfile } = useAuth(); 
+  const { currentUser, userProfile } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -58,14 +58,20 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   }, [initialProject]);
 
   const isOwner = useMemo(() => currentUser?.uid === projectData.ownerId, [currentUser, projectData.ownerId]);
+  const currentUserProjectRole = useMemo(()_currentProjectRole(): UserProjectRole | null => {
+    if (!currentUser || !projectData.memberRoles) return null;
+    return projectData.memberRoles[currentUser.uid] || null;
+  }, [currentUser, projectData.memberRoles]);
+
+  const canManageTasks = useMemo(() => isOwner || currentUserProjectRole === 'manager', [isOwner, currentUserProjectRole]);
 
   const assignableUsers = useMemo(() => {
     if (!projectData || !users) return [];
-    const memberAndOwnerIds = new Set<string>([
+    const projectMemberAndOwnerIds = new Set<string>([
       projectData.ownerId,
       ...(projectData.memberIds || [])
     ]);
-    return users.filter(user => memberAndOwnerIds.has(user.id));
+    return users.filter(user => projectMemberAndOwnerIds.has(user.id));
   }, [projectData, users]);
 
 
@@ -76,27 +82,27 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       </div>
     );
   }
-  
+
   const allTasksForDependencies = projectData.tasks.map(t => ({ id: t.id, title: t.title }));
 
   const handleAddTask = async (taskData: TaskFormData, columnId: string) => {
     setIsSubmitting(true);
-    if (!currentUser) { 
+    if (!currentUser) {
       toast({ variant: "destructive", title: "Authentication Error", description: "User must be authenticated to add tasks." });
       setIsSubmitting(false);
       return;
     }
-    if (!userProfile) { 
+    if (!userProfile) {
         toast({ variant: "default", title: "User Profile Warning", description: "User profile not fully loaded. Task will be created without a reporter if you proceed." });
         // Continue, reporterId is optional
     }
 
     const newTaskPayload: NewTaskData = {
       ...taskData,
-      reporterId: userProfile ? userProfile.id : undefined, 
+      reporterId: userProfile ? userProfile.id : undefined,
     };
 
-    console.log("Attempting to add task with payload:", newTaskPayload); 
+    console.log("Attempting to add task with payload:", newTaskPayload);
 
     try {
       const newTask = await addTaskToProject(projectData.id, newTaskPayload, columnId);
@@ -118,6 +124,10 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const handleEditTask = async (taskId: string, taskData: TaskFormData) => {
+    if (!canManageTasks) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "You do not have permission to edit tasks." });
+      return;
+    }
     setIsSubmitting(true);
     if (!currentUser) {
       toast({ variant: "destructive", title: "Authentication Error", description: "User must be authenticated to edit tasks." });
@@ -142,7 +152,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       toast({ title: "Task Updated", description: `"${updatedTask.title}" has been updated.` });
       setIsEditTaskDialogOpen(false);
       setTaskToEdit(null);
-      if (taskToView?.id === taskId) setTaskToView(updatedTask); 
+      if (taskToView?.id === taskId) setTaskToView(updatedTask);
     } catch (error) {
       console.error("Error updating task:", error);
       toast({ variant: "destructive", title: "Error Updating Task", description: error instanceof Error ? error.message : "Could not update task." });
@@ -152,8 +162,8 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const openDeleteConfirm = (taskId: TaskId) => {
-    if (!isOwner) {
-      toast({ variant: "destructive", title: "Permission Denied", description: "Only the project owner can delete tasks." });
+    if (!canManageTasks) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "You do not have permission to delete tasks." });
       return;
     }
     setTaskToDeleteId(taskId);
@@ -163,8 +173,8 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const handleDeleteTask = async () => {
     if (!taskToDeleteId) return;
 
-    if (!isOwner) {
-      toast({ variant: "destructive", title: "Permission Denied", description: "Only the project owner can delete tasks." });
+    if (!canManageTasks) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "You do not have permission to delete tasks." });
       setShowDeleteConfirm(false);
       setTaskToDeleteId(null);
       return;
@@ -187,7 +197,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         }
       });
       if (task) toast({ title: "Task Deleted", description: `"${task.title}" has been deleted.`, variant: "default" });
-      if (taskToView?.id === taskToDeleteId) setIsTaskDetailsDialogOpen(false); 
+      if (taskToView?.id === taskToDeleteId) setIsTaskDetailsDialogOpen(false);
     } catch (error) {
       console.error("Error deleting task:", error);
       toast({ variant: "destructive", title: "Error Deleting Task", description: error instanceof Error ? error.message : "Could not delete task." });
@@ -199,15 +209,15 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const handleAddComment = async (taskId: string, commentText: string) => {
-     if (!currentUser) { 
+     if (!currentUser) {
         toast({ variant: "destructive", title: "Authentication Error", description: "User must be authenticated to add comments." });
         return;
     }
-    if (!userProfile) { 
+    if (!userProfile) {
         toast({ variant: "destructive", title: "User Profile Error", description: "User profile not available. Cannot add comment." });
         return;
     }
-    setIsSubmitting(true); 
+    setIsSubmitting(true);
     const newCommentPayload: NewCommentData = {
       userId: userProfile.id,
       userName: userProfile.name || userProfile.email || 'Anonymous',
@@ -224,7 +234,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           }
           return task;
         });
-        
+
         if (taskToView?.id === taskId) {
             const updatedTaskForView = updatedTasks.find(t => t.id === taskId);
             if(updatedTaskForView) setTaskToView(updatedTaskForView);
@@ -232,7 +242,6 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         return { ...prevProject, tasks: updatedTasks };
       });
       toast({ title: "Comment Added" });
-      // TaskDetailsDialog might clear its own newComment input on successful add
     } catch (error) {
       console.error("Error adding comment:", error);
       toast({ variant: "destructive", title: "Error Adding Comment", description: error instanceof Error ? error.message : "Could not add comment." });
@@ -242,33 +251,49 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const onDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: TaskId) => {
-    if (isSubmitting) return; 
+    if (isSubmitting) return;
+    const task = projectData.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const canDrag = canManageTasks || task.assigneeUids?.includes(currentUser?.uid || '');
+    if (!canDrag) {
+        e.preventDefault();
+        toast({ variant: "destructive", title: "Permission Denied", description: "You can only move tasks you are assigned to, or if you are a manager/owner."});
+        return;
+    }
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("taskId", taskId);
     setDraggedTaskId(taskId);
   };
 
   const onDragOver = (e: React.DragEvent<HTMLDivElement>, columnId: ColumnId) => {
-    e.preventDefault(); 
+    e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   };
 
   const onDrop = async (e: React.DragEvent<HTMLDivElement>, targetColumnId: ColumnId) => {
     e.preventDefault();
-    if (isSubmitting) { 
+    if (isSubmitting) {
         setDraggedTaskId(null);
         return;
     }
     const sourceTaskId = e.dataTransfer.getData("taskId");
-    if (!sourceTaskId || !projectData) return;
+    if (!sourceTaskId || !projectData || !currentUser) return;
 
     const taskBeingMoved = projectData.tasks.find(t => t.id === sourceTaskId);
-    if (!taskBeingMoved || taskBeingMoved.columnId === targetColumnId) { 
+    if (!taskBeingMoved || taskBeingMoved.columnId === targetColumnId) {
         setDraggedTaskId(null);
         return;
     }
-    
-    const originalTasks = [...projectData.tasks]; 
+
+    const canMoveThisTask = canManageTasks || taskBeingMoved.assigneeUids?.includes(currentUser.uid);
+    if (!canMoveThisTask) {
+        toast({ variant: "destructive", title: "Permission Denied", description: "You can only move tasks you are assigned to, or if you are a manager/owner."});
+        setDraggedTaskId(null);
+        return;
+    }
+
+    const originalTasks = [...projectData.tasks];
     let movedTaskOrder = 0;
 
     const updatedTasksOptimistic = projectData.tasks.map(task => {
@@ -278,7 +303,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         }
         return task;
     });
- 
+
     updatedTasksOptimistic.sort((a, b) => {
         if (a.columnId === b.columnId) {
             return a.order - b.order;
@@ -290,7 +315,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
 
     setProjectData(prev => ({ ...prev!, tasks: updatedTasksOptimistic }));
-    setDraggedTaskId(null); 
+    setDraggedTaskId(null);
     setIsSubmitting(true);
 
     try {
@@ -299,7 +324,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     } catch (error) {
       console.error("Error moving task:", error);
       toast({ variant: "destructive", title: "Error Moving Task", description: error instanceof Error ? error.message : "Could not move task." });
-      setProjectData(prev => ({ ...prev!, tasks: originalTasks })); 
+      setProjectData(prev => ({ ...prev!, tasks: originalTasks }));
     } finally {
       setIsSubmitting(false);
     }
@@ -310,19 +335,19 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     <div className="container mx-auto py-6 h-[calc(100vh-var(--header-height,56px)-2rem)] flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-foreground">{projectData.name}</h1>
-        <Button 
-            onClick={() => { 
+        <Button
+            onClick={() => {
                 if (projectData.columns.length === 0) {
                     toast({variant: "destructive", title: "No Columns", description: "Please add a column to the project first."});
                     return;
                 }
-                setSelectedColumnIdForNewTask(projectData.columns.sort((a,b) => a.order - b.order)[0]?.id || null); 
-                setIsAddTaskDialogOpen(true); 
-            }} 
+                setSelectedColumnIdForNewTask(projectData.columns.sort((a,b) => a.order - b.order)[0]?.id || null);
+                setIsAddTaskDialogOpen(true);
+            }}
             className="bg-accent hover:bg-accent/90 text-accent-foreground"
             disabled={isSubmitting || projectData.columns.length === 0}
         >
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} 
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
           Add New Task
         </Button>
       </div>
@@ -331,9 +356,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           <KanbanColumn
             key={column.id}
             column={column}
-            tasks={projectData.tasks} 
-            users={users} // Pass all users for general display if needed, assignableUsers is for forms
-            isOwner={isOwner}
+            tasks={projectData.tasks}
+            users={users}
+            canManageTasks={canManageTasks}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
@@ -341,7 +366,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             onEditTask={(taskToEdit) => { setTaskToEdit(taskToEdit); setIsEditTaskDialogOpen(true); }}
             onDeleteTask={openDeleteConfirm}
             onViewTaskDetails={(task) => { setTaskToView(task); setIsTaskDetailsDialogOpen(true); }}
-            isSubmitting={isSubmitting} 
+            isSubmitting={isSubmitting}
           />
         ))}
          {projectData.columns.length === 0 && (
@@ -355,7 +380,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         isOpen={isAddTaskDialogOpen}
         onOpenChange={(isOpen) => {
           setIsAddTaskDialogOpen(isOpen);
-          if (!isOpen) setSelectedColumnIdForNewTask(null); 
+          if (!isOpen) setSelectedColumnIdForNewTask(null);
         }}
         onAddTask={handleAddTask}
         columnId={selectedColumnIdForNewTask}
@@ -367,7 +392,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         isOpen={isEditTaskDialogOpen}
         onOpenChange={(isOpen) => {
           setIsEditTaskDialogOpen(isOpen);
-          if (!isOpen) setTaskToEdit(null); 
+          if (!isOpen) setTaskToEdit(null);
         }}
         onEditTask={handleEditTask}
         taskToEdit={taskToEdit}
@@ -379,15 +404,15 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         isOpen={isTaskDetailsDialogOpen}
         onOpenChange={(isOpen) => {
           setIsTaskDetailsDialogOpen(isOpen);
-          if (!isOpen) setTaskToView(null); 
+          if (!isOpen) setTaskToView(null);
         }}
         task={taskToView}
-        users={users} // TaskDetails can show any user (e.g. reporter not in project members)
-        isOwner={isOwner}
+        users={users}
+        canManageTask={canManageTasks}
         onAddComment={handleAddComment}
         onEditTask={(task) => { setIsTaskDetailsDialogOpen(false); setTaskToEdit(task); setIsEditTaskDialogOpen(true); }}
         onDeleteTask={openDeleteConfirm}
-        isSubmittingComment={isSubmitting} 
+        isSubmittingComment={isSubmitting}
       />
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
@@ -400,8 +425,8 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTaskToDeleteId(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteTask} 
+            <AlertDialogAction
+              onClick={handleDeleteTask}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isSubmitting}
             >
