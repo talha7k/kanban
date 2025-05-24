@@ -24,7 +24,7 @@ import { v4 as uuidv4 } from 'uuid'; // For generating IDs
 const db = getFirestore();
 
 // User Profile Functions
-export const createUserProfileDocument = async (userAuth: FirebaseUser, additionalData?: Partial<UserProfile>) => {
+export const createUserProfileDocument = async (userAuth: FirebaseUser, additionalData?: Partial<Pick<UserProfile, 'name' | 'title'>>) => {
   if (!userAuth) return;
   const userRef = doc(db, `users/${userAuth.uid}`);
   const snapshot = await getDoc(userRef);
@@ -35,10 +35,13 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
     try {
       const newUserProfile: UserProfile = {
         id: userAuth.uid,
-        name: displayName || email?.split('@')[0] || 'New User',
+        name: additionalData?.name || displayName || email?.split('@')[0] || 'New User',
         email: email || '',
-        avatarUrl: photoURL || `https://placehold.co/40x40.png?text=${(displayName || email || 'U').substring(0,1).toUpperCase()}`,
+        avatarUrl: photoURL || `https://placehold.co/40x40.png?text=${(additionalData?.name || displayName || email || 'U').substring(0,1).toUpperCase()}`,
+        role: 'staff', // Default role
+        title: additionalData?.title || 'Team Member', // Default title
         createdAt,
+        // Spread other additionalData fields if any, though role and title are now primary
         ...additionalData,
       };
       // Firestore expects plain objects, so we remove 'id' before setting, as ID is the doc key
@@ -59,7 +62,14 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
   const userRef = doc(db, `users/${userId}`);
   const snapshot = await getDoc(userRef);
   if (snapshot.exists()) {
-    return { id: snapshot.id, ...snapshot.data() } as UserProfile;
+    const data = snapshot.data() as UserDocument;
+    // Ensure role and title have default values if missing from older documents
+    return { 
+      id: snapshot.id, 
+      ...data,
+      role: data.role || 'staff',
+      title: data.title || '', // Or 'Team Member' if preferred for older docs lacking it
+    } as UserProfile;
   }
   return null;
 };
@@ -68,7 +78,15 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
   try {
     const usersCollectionRef = collection(db, 'users');
     const querySnapshot = await getDocs(usersCollectionRef);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data() as UserDocument;
+      return { 
+        id: doc.id, 
+        ...data,
+        role: data.role || 'staff', // Default for older docs
+        title: data.title || '', // Default for older docs
+      } as UserProfile;
+    });
   } catch (error) {
     console.error('Error fetching all user profiles:', error);
     throw error;
@@ -156,7 +174,7 @@ export const addTaskToProject = async (projectId: string, taskData: NewTaskData,
     const project = projectDoc.data() as ProjectDocument;
     const newTaskId = uuidv4();
     const newTask: Task = {
-      ...taskData,
+      ...taskData, // This includes optional reporterId
       id: newTaskId,
       projectId,
       columnId,
@@ -214,17 +232,19 @@ export const deleteTaskFromProject = async (projectId: string, taskId: string): 
     if (!projectDoc.exists()) throw new Error('Project not found');
 
     const project = projectDoc.data() as ProjectDocument;
-    const taskToDelete = project.tasks.find(t => t.id === taskId);
-    if (!taskToDelete) throw new Error('Task not found for deletion');
-
-    // Firestore's arrayRemove requires the exact object to remove.
-    // For simplicity if object references are tricky, fetching and then filtering might be safer.
-    // However, if taskToDelete is exactly what's in Firestore, arrayRemove works.
-    // A more robust way if object has changed slightly is to filter:
-    const updatedTasks = project.tasks.filter(t => t.id !== taskId);
-
+    // Find the exact task object to remove, as arrayRemove needs the exact reference or value.
+    // If tasks are complex objects, it's often safer to read, filter, and write back the array.
+    const taskToRemove = project.tasks.find(t => t.id === taskId);
+    if (!taskToRemove) throw new Error('Task not found for deletion');
+    
+    // Using arrayRemove with the identified object.
+    // Note: For complex objects, ensure the object passed to arrayRemove is identical to the one in Firestore.
+    // If there are discrepancies (e.g., due to local modifications not yet synced),
+    // filtering the array and setting it again (as shown in previous example) is more robust.
+    // const updatedTasks = project.tasks.filter(t => t.id !== taskId); // Alternative robust way
+    
     await updateDoc(projectRef, {
-      tasks: updatedTasks, // or arrayRemove(taskToDelete) if confident about object equality
+      tasks: arrayRemove(taskToRemove), // Using arrayRemove
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
@@ -239,21 +259,29 @@ export const moveTaskInProject = async (projectId: string, taskId: string, newCo
     const projectDoc = await getDoc(projectRef);
     if (!projectDoc.exists()) throw new Error('Project not found');
 
-    const project = projectDoc.data() as ProjectDocument;
-    const taskIndex = project.tasks.findIndex(t => t.id === taskId);
-    if (taskIndex === -1) throw new Error('Task not found');
+    let project = projectDoc.data() as ProjectDocument;
+    let taskToMove: Task | undefined;
+    
+    // Create a new tasks array with the moved task updated
+    const updatedTasks = project.tasks.map(task => {
+      if (task.id === taskId) {
+        taskToMove = { 
+          ...task, 
+          columnId: newColumnId, 
+          order: newOrder, 
+          updatedAt: new Date().toISOString() 
+        };
+        return taskToMove;
+      }
+      return task;
+    });
 
-    const taskToMove = { ...project.tasks[taskIndex] };
-    taskToMove.columnId = newColumnId;
-    taskToMove.order = newOrder;
-    taskToMove.updatedAt = new Date().toISOString();
-    
-    const updatedTasks = project.tasks.map(t => t.id === taskId ? taskToMove : t);
-    
-    // Potentially re-order other tasks in the affected columns if needed.
-    // For now, we assume client sends the correct `newOrder` for the moved task,
-    // and other tasks' orders are managed visually on client or by subsequent server logic.
-    // A more robust solution would re-calculate orders for tasks in targetColumnId and sourceColumnId.
+    if (!taskToMove) throw new Error('Task not found during move operation');
+
+    // Further re-ordering logic for other tasks in the source/target column can be complex with array operations.
+    // A common strategy is to update the moved task and then re-normalize orders if strict ordering is critical
+    // on the backend. For now, client-side optimistic updates handle visual order.
+    // This update primarily ensures the moved task's columnId and its intended order are saved.
 
     await updateDoc(projectRef, {
       tasks: updatedTasks,
@@ -294,7 +322,8 @@ export const addCommentToTask = async (projectId: string, taskId: string, commen
       updatedAt: new Date().toISOString(),
     });
     return newComment;
-  } catch (error) {
+  } catch (error)
+{
     console.error('Error adding comment to task:', error);
     throw error;
   }

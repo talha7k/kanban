@@ -3,39 +3,44 @@
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import type { Project, UserProfile } from '@/lib/types';
 import { useEffect, useState } from 'react';
-import { getProjectById, getAllUserProfiles } from '@/lib/firebaseService'; // Using Firestore service
+import { getProjectById, getAllUserProfiles } from '@/lib/firebaseService'; 
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react'; // For loading indicator
+import { Loader2 } from 'lucide-react'; 
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function ProjectPage({ params }: { params: { projectId: string } }) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   
-  const [project, setProject] = useState<Project | null>(null); // null for not found or initial
+  const [project, setProject] = useState<Project | null>(null); 
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingProject, setIsLoadingProject] = useState(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (params.projectId && currentUser) { // Ensure user is available for potential permission checks later
+    if (params.projectId && currentUser) { 
       const fetchProjectData = async () => {
-        setIsLoading(true);
+        setIsLoadingProject(true);
+        setIsLoadingUsers(true);
         setError(null);
         try {
-          const fetchedProject = await getProjectById(params.projectId);
+          // Fetch project and users in parallel
+          const [fetchedProject, fetchedUsers] = await Promise.all([
+            getProjectById(params.projectId),
+            getAllUserProfiles()
+          ]);
+
           if (fetchedProject) {
             // TODO: Add permission check here - is currentUser.uid part of project.memberIds or ownerId?
-            // For now, assuming public access or owner is viewing.
             setProject(fetchedProject);
           } else {
             setError(`Project with ID ${params.projectId} not found.`);
             setProject(null);
+            toast({ variant: "destructive", title: "Project Not Found", description: `Could not load project ${params.projectId}.` });
           }
-
-          // Fetch all users for assignee pickers etc.
-          // In a real app, you might only fetch project members.
-          const fetchedUsers = await getAllUserProfiles();
           setUsers(fetchedUsers);
 
         } catch (err) {
@@ -44,16 +49,19 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
           setError(errorMessage);
           toast({ variant: "destructive", title: "Error Loading Project", description: errorMessage });
         } finally {
-          setIsLoading(false);
+          setIsLoadingProject(false);
+          setIsLoadingUsers(false);
         }
       };
       fetchProjectData();
     } else if (!currentUser) {
-        setIsLoading(false);
-        // User not loaded yet, or not logged in. KanbanBoard might not render correctly.
-        // Or redirect via AuthProvider if this page should be strictly protected.
+        setIsLoadingProject(false);
+        setIsLoadingUsers(false);
+        // User not loaded yet, or not logged in.
     }
   }, [params.projectId, currentUser, toast]);
+
+  const isLoading = isLoadingProject || isLoadingUsers;
 
   if (isLoading) {
     return (
@@ -64,7 +72,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     );
   }
 
-  if (error) {
+  if (error && !project) { // Show error only if project loading failed critically
     return (
       <div className="flex flex-col items-center justify-center h-full text-destructive p-8">
         <h2 className="text-2xl font-semibold mb-2">Error</h2>
@@ -87,15 +95,10 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     );
   }
 
-  // Ensure users are loaded before rendering KanbanBoard if it strictly depends on them for assignees
-  // For now, passing potentially empty users array if that fetch fails or is slow.
   return (
     <div className="h-full">
+      {/* Pass users list which should now be populated before KanbanBoard renders */}
       <KanbanBoard project={project} users={users} />
     </div>
   );
 }
-
-// Need to add Button and Link imports if not already present from error display
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';

@@ -32,8 +32,8 @@ import { useAuth } from '@/hooks/useAuth';
 
 
 interface KanbanBoardProps {
-  project: Project; // Project data is now passed directly from Firestore
-  users: UserProfile[]; // List of all users for assignment pickers etc.
+  project: Project; 
+  users: UserProfile[]; 
 }
 
 export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps) {
@@ -47,13 +47,12 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const [draggedTaskId, setDraggedTaskId] = useState<TaskId | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDeleteId, setTaskToDeleteId] = useState<TaskId | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // For generic loading state on actions
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
-  const { userProfile } = useAuth(); // To get current user for comments, etc.
+  const { userProfile } = useAuth(); 
   const { toast } = useToast();
 
   useEffect(() => {
-    // Update local projectData if initialProject prop changes (e.g., due to parent re-fetch)
     setProjectData(initialProject);
   }, [initialProject]);
 
@@ -68,14 +67,15 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const allTasksForDependencies = projectData.tasks.map(t => ({ id: t.id, title: t.title }));
 
   const handleAddTask = async (taskData: TaskFormData, columnId: string) => {
-    if (!userProfile) {
-        toast({ variant: "destructive", title: "User Profile Error", description: "User profile not available. Cannot add task." });
-        return;
-    }
     setIsSubmitting(true);
+    // reporterId is optional, so we don't need to hard block if userProfile is null,
+    // but we should still warn the user.
+    if (!userProfile) {
+        toast({ variant: "destructive", title: "User Profile Warning", description: "User profile not fully loaded. Task will be created without a reporter." });
+    }
     const newTaskPayload: NewTaskData = {
       ...taskData,
-      reporterId: userProfile.id, // Assign current user as reporter
+      reporterId: userProfile ? userProfile.id : undefined, 
     };
     try {
       const newTask = await addTaskToProject(projectData.id, newTaskPayload, columnId);
@@ -96,11 +96,8 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const handleEditTask = async (taskId: string, taskData: TaskFormData) => {
     setIsSubmitting(true);
     try {
-      // Ensure we don't pass undefined fields that shouldn't be there,
-      // firebaseService 'updateTaskInProject' handles partial updates
       const updatePayload: Partial<Omit<Task, 'id' | 'projectId' | 'createdAt'>> = {
         ...taskData,
-        // reporterId is not typically editable this way, ensure it's not accidentally changed
       };
 
       const updatedTask = await updateTaskInProject(projectData.id, taskId, updatePayload);
@@ -113,7 +110,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       toast({ title: "Task Updated", description: `"${updatedTask.title}" has been updated.` });
       setIsEditTaskDialogOpen(false);
       setTaskToEdit(null);
-      if (taskToView?.id === taskId) setTaskToView(updatedTask); // Update task details view if open
+      if (taskToView?.id === taskId) setTaskToView(updatedTask); 
     } catch (error) {
       console.error("Error updating task:", error);
       toast({ variant: "destructive", title: "Error Updating Task", description: error instanceof Error ? error.message : "Could not update task." });
@@ -138,7 +135,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         tasks: prevProject!.tasks.filter(t => t.id !== taskToDeleteId),
       }));
       if (task) toast({ title: "Task Deleted", description: `"${task.title}" has been deleted.`, variant: "default" });
-      if (taskToView?.id === taskToDeleteId) setIsTaskDetailsDialogOpen(false); // Close details if deleted
+      if (taskToView?.id === taskToDeleteId) setIsTaskDetailsDialogOpen(false); 
     } catch (error) {
       console.error("Error deleting task:", error);
       toast({ variant: "destructive", title: "Error Deleting Task", description: error instanceof Error ? error.message : "Could not delete task." });
@@ -150,11 +147,11 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const handleAddComment = async (taskId: string, commentText: string) => {
-     if (!userProfile) {
+     if (!userProfile) { // This guard is important for comments
         toast({ variant: "destructive", title: "User Profile Error", description: "User profile not available. Cannot add comment." });
         return;
     }
-    setIsSubmitting(true); // Consider a more specific loading state for comments
+    setIsSubmitting(true); 
     const newCommentPayload: NewCommentData = {
       userId: userProfile.id,
       userName: userProfile.name || userProfile.email || 'Anonymous',
@@ -170,7 +167,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           }
           return task;
         });
-        // If the detailed task view is open, update it as well
+        
         if (taskToView?.id === taskId) {
             const updatedTaskForView = updatedTasks.find(t => t.id === taskId);
             if(updatedTaskForView) setTaskToView(updatedTaskForView);
@@ -178,9 +175,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         return { ...prevProject!, tasks: updatedTasks };
       });
       toast({ title: "Comment Added" });
-      // Clear comment field in TaskDetailsDialog after successful submission
-      // This is typically handled by the TaskDetailsDialog itself or by passing a callback.
-      // For now, the parent (KanbanBoard) will re-render TaskDetailsDialog with updated task (and thus comments)
+      
     } catch (error) {
       console.error("Error adding comment:", error);
       toast({ variant: "destructive", title: "Error Adding Comment", description: error instanceof Error ? error.message : "Could not add comment." });
@@ -206,44 +201,50 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     if (!sourceTaskId || !projectData) return;
 
     const taskBeingMoved = projectData.tasks.find(t => t.id === sourceTaskId);
-    if (!taskBeingMoved) return;
-
-    // Simplified: For now, new order is end of target column.
-    // More complex logic would find the exact drop index.
+    if (!taskBeingMoved || taskBeingMoved.columnId === targetColumnId) { // Prevent drop in same column for now
+        setDraggedTaskId(null);
+        return;
+    }
+    
     const targetColumnTasks = projectData.tasks.filter(t => t.columnId === targetColumnId && t.id !== sourceTaskId);
     const newOrder = targetColumnTasks.length; 
 
-    // Optimistic UI update (can be removed if strict "update after Firestore" is preferred)
-    const prevProjectData = projectData; // Save for potential rollback
+    const prevProjectData = {...projectData}; 
+    
+    // Optimistic UI update
     setProjectData(currentProjectData => {
         if (!currentProjectData) return currentProjectData;
-        const updatedTasks = currentProjectData.tasks.map(task => 
-            task.id === sourceTaskId ? { ...task, columnId: targetColumnId, order: newOrder, updatedAt: new Date().toISOString() } : task
-        );
-        // Re-order tasks within the target column (and source column if applicable)
-        // This is a simplified re-ordering logic for optimistic update.
-        // A more robust solution would handle different drop positions within the column.
-        const finalTasks = updatedTasks
-            .filter(t => t.columnId === targetColumnId)
-            .sort((a,b) => a.order - b.order)
-            .map((task, index) => ({ ...task, order: index }));
-        
-        const otherTasks = updatedTasks.filter(t => t.columnId !== targetColumnId);
-        
-        return { ...currentProjectData, tasks: [...otherTasks, ...finalTasks] };
+        let movedTask: Task | undefined;
+        const updatedTasksOptimistic = currentProjectData.tasks.map(task => {
+            if (task.id === sourceTaskId) {
+                movedTask = { ...task, columnId: targetColumnId, order: newOrder, updatedAt: new Date().toISOString() };
+                return movedTask;
+            }
+            return task;
+        }).filter(Boolean) as Task[]; // filter(Boolean) to remove undefined if any issue, and assert type
+
+        // Further re-order tasks within source and target columns optimistically for smoother UI
+        // This can be complex, for now, the main update is the columnId and order of the moved task.
+        // A more robust solution would involve sorting tasks in both affected columns by their 'order' property.
+        return { ...currentProjectData, tasks: updatedTasksOptimistic };
     });
 
 
     setIsSubmitting(true);
     try {
       await moveTaskInProject(projectData.id, sourceTaskId, targetColumnId, newOrder);
-      // Firestore success, local state already updated optimistically.
-      // If not using optimistic update, fetch new project data or update local state here.
+      // Fetch the updated project to ensure local state is in sync with Firestore after move
+      const latestProjectData = await initialProject.id // Assuming initialProject always has an ID
+                                ? (await import('@/lib/firebaseService')).getProjectById(initialProject.id)
+                                : null;
+      if (latestProjectData) {
+        setProjectData(latestProjectData);
+      }
       toast({ title: "Task Moved", description: `"${taskBeingMoved.title}" moved.` });
     } catch (error) {
       console.error("Error moving task:", error);
       toast({ variant: "destructive", title: "Error Moving Task", description: error instanceof Error ? error.message : "Could not move task." });
-      setProjectData(prevProjectData); // Rollback optimistic update
+      setProjectData(prevProjectData); 
     } finally {
       setIsSubmitting(false);
       setDraggedTaskId(null);
@@ -272,7 +273,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           <KanbanColumn
             key={column.id}
             column={column}
-            tasks={projectData.tasks.filter(task => task.projectId === projectData.id)} // Already filtered by project on page load
+            tasks={projectData.tasks} 
             users={users}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
@@ -281,7 +282,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             onEditTask={(taskToEdit) => { setTaskToEdit(taskToEdit); setIsEditTaskDialogOpen(true); }}
             onDeleteTask={openDeleteConfirm}
             onViewTaskDetails={(task) => { setTaskToView(task); setIsTaskDetailsDialogOpen(true); }}
-            isSubmitting={isSubmitting} // Pass down submitting state for disabling column actions
+            isSubmitting={isSubmitting} 
           />
         ))}
       </div>
@@ -310,9 +311,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         task={taskToView}
         users={users}
         onAddComment={handleAddComment}
-        onEditTask={(task) => { setTaskToEdit(task); setIsEditTaskDialogOpen(true); }}
+        onEditTask={(task) => { setIsTaskDetailsDialogOpen(false); setTaskToEdit(task); setIsEditTaskDialogOpen(true); }}
         onDeleteTask={openDeleteConfirm}
-        isSubmittingComment={isSubmitting} // Or a more specific state
+        isSubmittingComment={isSubmitting} 
       />
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
@@ -339,5 +340,3 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     </div>
   );
 }
-
-  

@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { NewProjectData, Project, UserProfile } from '@/lib/types';
 import { CreateProjectDialog } from '@/components/dashboard/CreateProjectDialog';
-import { PlusCircle, Users, FolderKanban, Loader2 } from 'lucide-react';
+import { PlusCircle, Users, FolderKanban, Loader2, Briefcase } from 'lucide-react'; // Added Briefcase for title
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { getProjectsForUser, getAllUserProfiles, createProject as createProjectInDb } from '@/lib/firebaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge'; // For displaying role
 
 export default function DashboardPage() {
   const { currentUser, userProfile } = useAuth();
@@ -142,14 +143,24 @@ export default function DashboardPage() {
               <ScrollArea className="h-[400px] pr-4">
                 <ul className="space-y-3">
                   {allUsers.map((user) => (
-                    <li key={user.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
+                    <li key={user.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50">
                       <Avatar className="h-9 w-9">
                         <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile avatar" />
                         <AvatarFallback>{user.name?.substring(0, 2).toUpperCase() || user.email?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <span className="text-sm font-medium text-foreground">{user.name}</span>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-foreground">{user.name}</span>
+                            <Badge variant={user.role === 'admin' ? "default" : "secondary"} className="capitalize text-xs">
+                                {user.role}
+                            </Badge>
+                        </div>
                         <p className="text-xs text-muted-foreground">{user.email}</p>
+                        {user.title && (
+                            <p className="text-xs text-muted-foreground flex items-center mt-0.5">
+                                <Briefcase className="h-3 w-3 mr-1.5" /> {user.title}
+                            </p>
+                        )}
                       </div>
                     </li>
                   ))}

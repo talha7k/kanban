@@ -9,6 +9,8 @@ export interface UserProfile {
   name: string; // Firebase displayName or mock name
   email?: string; // Firebase email
   avatarUrl?: string; // Firebase photoURL or mock avatar
+  role: 'admin' | 'staff'; // New field for user role
+  title?: string; // New field for user title/position
   createdAt?: string; // ISO string, from Firestore
 }
 
@@ -88,3 +90,4 @@ export interface ProjectDocument extends Omit<Project, 'id' | 'tasks' | 'columns
 export interface UserDocument extends Omit<UserProfile, 'id'> {
   // id is the document ID in Firestore
 }
+
