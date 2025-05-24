@@ -1,35 +1,12 @@
 
-import type { Project, Team, UserProfile, Column, Task } from '@/lib/types';
+import type { Project, UserProfile, Column, Task } from '@/lib/types';
 import { useState, useEffect } from 'react';
 
 const mockUsers: UserProfile[] = [
-  { id: 'user1', name: 'Alice Wonderland', avatarUrl: 'https://placehold.co/40x40.png?text=AW', teamIds: ['team-alpha'] },
-  { id: 'user2', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/40x40.png?text=BB', teamIds: ['team-alpha', 'team-beta'] },
-  { id: 'user3', name: 'Charlie Brown', avatarUrl: 'https://placehold.co/40x40.png?text=CB', teamIds: ['team-beta'] },
-  { id: 'user4', name: 'Diana Prince', avatarUrl: 'https://placehold.co/40x40.png?text=DP' }, // No team
-];
-
-const mockTeams: Team[] = [
-  {
-    id: 'team-alpha',
-    name: 'Alpha Squad',
-    description: 'Core development team.',
-    memberUids: ['user1', 'user2'],
-    adminUids: ['user1'],
-    projectIds: ['project-alpha', 'project-gamma'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'team-beta',
-    name: 'Beta Testers Inc.',
-    description: 'QA and testing specialists.',
-    memberUids: ['user2', 'user3'],
-    adminUids: ['user3'],
-    projectIds: ['project-beta'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
+  { id: 'user1', name: 'Alice Wonderland', avatarUrl: 'https://placehold.co/40x40.png?text=AW' },
+  { id: 'user2', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/40x40.png?text=BB' },
+  { id: 'user3', name: 'Charlie Brown', avatarUrl: 'https://placehold.co/40x40.png?text=CB' },
+  { id: 'user4', name: 'Diana Prince', avatarUrl: 'https://placehold.co/40x40.png?text=DP' },
 ];
 
 const projectAlphaTasks: Task[] = [
@@ -60,7 +37,7 @@ const projectAlphaTasks: Task[] = [
     priority: 'MEDIUM',
     columnId: 'col-pA-1', // To Do
     order: 1,
-    assigneeUids: ['user3'], // Charlie can be assigned even if not in Alpha Squad for this example
+    assigneeUids: ['user3'],
     reporterId: 'user1',
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     tags: ['design', 'ui'],
@@ -138,7 +115,6 @@ const mockProjects: Project[] = [
     name: 'Project Alpha Development',
     description: 'The main development stream for product Alpha.',
     ownerId: 'user1',
-    teamId: 'team-alpha',
     columns: projectAlphaColumns,
     tasks: projectAlphaTasks,
     createdAt: new Date().toISOString(),
@@ -149,7 +125,6 @@ const mockProjects: Project[] = [
     name: 'Project Beta Initiative',
     description: 'New product initiative Beta.',
     ownerId: 'user3',
-    teamId: 'team-beta',
     columns: projectBetaColumns,
     tasks: projectBetaTasks,
     createdAt: new Date().toISOString(),
@@ -160,7 +135,6 @@ const mockProjects: Project[] = [
     name: 'Project Gamma (Upcoming)',
     description: 'Future project, currently in planning.',
     ownerId: 'user1',
-    teamId: 'team-alpha',
     columns: [
         { id: 'col-pG-1', title: 'Backlog', taskIds: [], order: 0 },
         { id: 'col-pG-2', title: 'Selected for Dev', taskIds: [], order: 1 },
@@ -173,23 +147,17 @@ const mockProjects: Project[] = [
 
 export interface MockKanbanDataType {
   users: UserProfile[];
-  teams: Team[];
   projects: Project[];
   getProjectById: (projectId: string) => Project | undefined;
-  // Add setters if direct manipulation of mock data is needed from components,
-  // though this hook primarily serves initial data.
-  // setProjects: React.Dispatch<React.SetStateAction<Project[]>>; 
 }
 
 export function useMockKanbanData(): MockKanbanDataType {
   const [users, setUsersState] = useState<UserProfile[]>(mockUsers);
-  const [teams, setTeamsState] = useState<Team[]>(mockTeams);
   const [projects, setProjectsState] = useState<Project[]>(mockProjects);
 
   // Simulate fetching data - in a real app, this would be an API call
   useEffect(() => {
     setUsersState(mockUsers);
-    setTeamsState(mockTeams);
     setProjectsState(mockProjects);
   }, []);
 
@@ -197,5 +165,5 @@ export function useMockKanbanData(): MockKanbanDataType {
     return projects.find(p => p.id === projectId);
   };
 
-  return { users, teams, projects, getProjectById };
+  return { users, projects, getProjectById };
 }
