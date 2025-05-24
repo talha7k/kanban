@@ -21,6 +21,13 @@ export interface Project {
   updatedAt: string; // ISO
 }
 
+// Data for creating a new project, before it has an ID, default columns, etc.
+export interface NewProjectData {
+  name: string;
+  description?: string;
+}
+
+
 export interface Task {
   id: TaskId;
   title: string;

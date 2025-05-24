@@ -14,9 +14,8 @@ export default function HomePage() {
         Streamline your team's workflow with our intelligent Kanban board. Organize tasks by project, visualize progress, and collaborate effectively.
       </p>
       <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-transform hover:scale-105">
-        {/* Link to a default mock project */}
-        <Link href="/projects/project-alpha"> 
-          Go to Project Alpha
+        <Link href="/dashboard"> 
+          Go to Dashboard
         </Link>
       </Button>
       <div className="mt-16 p-6 border rounded-lg shadow-xl bg-card max-w-md">

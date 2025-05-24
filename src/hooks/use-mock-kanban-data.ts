@@ -1,6 +1,6 @@
 
-import type { Project, UserProfile, Column, Task } from '@/lib/types';
-import { useState, useEffect } from 'react';
+import type { Project, UserProfile, Column, Task, NewProjectData } from '@/lib/types';
+import { useState, useEffect, useCallback } from 'react';
 
 const mockUsers: UserProfile[] = [
   { id: 'user1', name: 'Alice Wonderland', avatarUrl: 'https://placehold.co/40x40.png?text=AW' },
@@ -64,9 +64,9 @@ const projectAlphaTasks: Task[] = [
 ];
 
 const projectAlphaColumns: Column[] = [
-  { id: 'col-pA-1', title: 'To Do (Alpha)', taskIds: ['task-pA-1', 'task-pA-2'], order: 0 },
-  { id: 'col-pA-2', title: 'In Progress (Alpha)', taskIds: ['task-pA-3'], order: 1 },
-  { id: 'col-pA-3', title: 'Done (Alpha)', taskIds: [], order: 2 },
+  { id: 'col-pA-1', title: 'To Do', taskIds: ['task-pA-1', 'task-pA-2'], order: 0 },
+  { id: 'col-pA-2', title: 'In Progress', taskIds: ['task-pA-3'], order: 1 },
+  { id: 'col-pA-3', title: 'Done', taskIds: [], order: 2 },
 ];
 
 
@@ -102,14 +102,14 @@ const projectBetaTasks: Task[] = [
 ];
 
 const projectBetaColumns: Column[] = [
-  { id: 'col-pB-1', title: 'Planning (Beta)', taskIds: ['task-pB-1'], order: 0 },
-  { id: 'col-pB-2', title: 'Development (Beta)', taskIds: ['task-pB-2'], order: 1 },
-  { id: 'col-pB-3', title: 'Testing (Beta)', taskIds: [], order: 2 },
-  { id: 'col-pB-4', title: 'Launched (Beta)', taskIds: [], order: 3 },
+  { id: 'col-pB-1', title: 'Planning', taskIds: ['task-pB-1'], order: 0 },
+  { id: 'col-pB-2', title: 'Development', taskIds: ['task-pB-2'], order: 1 },
+  { id: 'col-pB-3', title: 'Testing', taskIds: [], order: 2 },
+  { id: 'col-pB-4', title: 'Launched', taskIds: [], order: 3 },
 ];
 
 
-const mockProjects: Project[] = [
+const initialMockProjects: Project[] = [
   {
     id: 'project-alpha',
     name: 'Project Alpha Development',
@@ -131,7 +131,7 @@ const mockProjects: Project[] = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: 'project-gamma', // Example of a project with no tasks/columns yet
+    id: 'project-gamma', 
     name: 'Project Gamma (Upcoming)',
     description: 'Future project, currently in planning.',
     ownerId: 'user1',
@@ -149,21 +149,46 @@ export interface MockKanbanDataType {
   users: UserProfile[];
   projects: Project[];
   getProjectById: (projectId: string) => Project | undefined;
+  addProject: (projectData: NewProjectData) => Project;
 }
 
 export function useMockKanbanData(): MockKanbanDataType {
   const [users, setUsersState] = useState<UserProfile[]>(mockUsers);
-  const [projects, setProjectsState] = useState<Project[]>(mockProjects);
+  const [projects, setProjectsState] = useState<Project[]>(initialMockProjects);
 
-  // Simulate fetching data - in a real app, this would be an API call
   useEffect(() => {
     setUsersState(mockUsers);
-    setProjectsState(mockProjects);
+    setProjectsState(initialMockProjects);
   }, []);
 
-  const getProjectById = (projectId: string): Project | undefined => {
+  const getProjectById = useCallback((projectId: string): Project | undefined => {
     return projects.find(p => p.id === projectId);
-  };
+  }, [projects]);
 
-  return { users, projects, getProjectById };
+  const addProject = useCallback((projectData: NewProjectData): Project => {
+    const newProjectId = `project-${Date.now()}`;
+    const defaultOwner = users[0]?.id || 'user-unknown'; // Default to first user or a fallback
+
+    const defaultColumns: Column[] = [
+      { id: `col-${newProjectId}-1`, title: 'To Do', taskIds: [], order: 0 },
+      { id: `col-${newProjectId}-2`, title: 'In Progress', taskIds: [], order: 1 },
+      { id: `col-${newProjectId}-3`, title: 'Done', taskIds: [], order: 2 },
+    ];
+
+    const newProject: Project = {
+      id: newProjectId,
+      name: projectData.name,
+      description: projectData.description || '',
+      ownerId: defaultOwner,
+      columns: defaultColumns,
+      tasks: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setProjectsState(prevProjects => [...prevProjects, newProject]);
+    return newProject;
+  }, [users]);
+
+  return { users, projects, getProjectById, addProject };
 }
