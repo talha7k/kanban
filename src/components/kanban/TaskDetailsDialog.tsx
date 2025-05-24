@@ -1,10 +1,10 @@
+
 "use client";
 
 import type { Task, UserProfile, Comment as CommentType } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, User, Tag, Users, MessageSquare, Edit2, Trash2, Info } from 'lucide-react';
+import { CalendarDays, User, Tag, Users, MessageSquare, Edit2, Trash2, Info, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { CommentItem } from './CommentItem';
 import { useState, useEffect } from 'react';
@@ -27,9 +27,10 @@ interface TaskDetailsDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   task: Task | null;
   users: UserProfile[];
-  onAddComment: (taskId: string, commentText: string) => void;
+  onAddComment: (taskId: string, commentText: string) => Promise<void> | void; // Can be async
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
+  isSubmittingComment?: boolean; // Specific loading state for comment submission
 }
 
 export function TaskDetailsDialog({
@@ -39,7 +40,8 @@ export function TaskDetailsDialog({
   users,
   onAddComment,
   onEditTask,
-  onDeleteTask
+  onDeleteTask,
+  isSubmittingComment,
 }: TaskDetailsDialogProps) {
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<CommentType[]>([]);
@@ -47,34 +49,31 @@ export function TaskDetailsDialog({
 
   useEffect(() => {
     if (task?.comments) {
-      setComments(task.comments.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      // Sort comments by date, most recent first
+      setComments([...task.comments].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } else {
       setComments([]);
     }
-  }, [task]);
+     // Clear new comment input when dialog opens or task changes
+    if (isOpen) {
+        setNewComment('');
+    }
+  }, [task, isOpen]);
 
   if (!isOpen || !task) return null;
 
   const assignees = task.assigneeUids?.map(uid => users.find(u => u.id === uid)).filter(Boolean) as UserProfile[] || [];
-  const reporter = users.find(u => u.id === task.reporterId);
+  const reporter = users.find(u => u.id === task.reporterId); // Assuming reporterId is on task
 
-  const handleAddComment = () => {
-    if (newComment.trim() === '') return;
-    onAddComment(task.id, newComment);
-    // Optimistically add comment to UI - parent component will handle actual data update
-    // This will be replaced by real-time updates from Firebase later
-    const currentUser = users[0] || { id: 'tempUser', name: 'You', avatarUrl: 'https://placehold.co/32x32.png?text=U' }; // Placeholder for current user
-    const optimisticComment: CommentType = {
-        id: `temp-${Date.now()}`,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        avatarUrl: currentUser.avatarUrl,
-        content: newComment,
-        createdAt: new Date().toISOString(),
-    };
-    setComments(prev => [optimisticComment, ...prev]);
-    setNewComment('');
-    toast({ title: "Comment added!" });
+  const handleAddCommentSubmit = async () => {
+    if (newComment.trim() === '') {
+        toast({ variant: "destructive", title: "Empty Comment", description: "Cannot add an empty comment."});
+        return;
+    }
+    await onAddComment(task.id, newComment);
+    // Parent (KanbanBoard) should handle optimistic update or refetch.
+    // If successful, the `task` prop will update, and useEffect will refresh comments.
+    // setNewComment(''); // Clear after successful submission by parent
   };
 
   const getPriorityBadgeVariant = (priority: Task['priority']) => {
@@ -93,10 +92,10 @@ export function TaskDetailsDialog({
           <div className="flex justify-between items-start">
             <DialogTitle className="text-2xl font-bold text-foreground">{task.title}</DialogTitle>
             <div className="flex space-x-2">
-                <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task">
+                <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment}>
                     <Edit2 className="h-4 w-4" />
                 </Button>
-                <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id); onOpenChange(false);}} aria-label="Delete task">
+                <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id); /* onOpenChange(false) handled by parent if delete successful */}} aria-label="Delete task" disabled={isSubmittingComment}>
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </div>
@@ -108,7 +107,7 @@ export function TaskDetailsDialog({
           )}
         </DialogHeader>
         
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 -mx-6 px-6"> {/* Negative margin + padding trick for full-bleed scroll content */}
           <div className="space-y-4 py-4">
             {task.description && (
               <div>
@@ -130,6 +129,18 @@ export function TaskDetailsDialog({
                   <strong>Reporter:</strong>&nbsp; <span className="text-foreground">{reporter.name}</span>
                 </div>
               )}
+               {task.createdAt && (
+                <div className="flex items-center">
+                  <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <strong>Created:</strong>&nbsp; <span className="text-foreground">{format(new Date(task.createdAt), 'MMM d, yyyy HH:mm')}</span>
+                </div>
+              )}
+              {task.updatedAt && (
+                <div className="flex items-center">
+                  <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <strong>Updated:</strong>&nbsp; <span className="text-foreground">{format(new Date(task.updatedAt), 'MMM d, yyyy HH:mm')}</span>
+                </div>
+              )}
             </div>
 
             {assignees.length > 0 && (
@@ -140,7 +151,7 @@ export function TaskDetailsDialog({
                     <Badge key={user.id} variant="secondary" className="flex items-center gap-1.5 pr-1">
                       <Avatar className="h-5 w-5">
                         <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile small" />
-                        <AvatarFallback>{user.name.substring(0,1)}</AvatarFallback>
+                        <AvatarFallback>{user.name?.substring(0,1).toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
                       {user.name}
                     </Badge>
@@ -162,7 +173,7 @@ export function TaskDetailsDialog({
               <div>
                 <h3 className="font-semibold text-sm mb-1 text-muted-foreground flex items-center"><Info className="h-4 w-4 mr-2" />Dependent Tasks</h3>
                 <div className="flex flex-wrap gap-2">
-                  {task.dependentTaskTitles.map(depTitle => <Badge key={depTitle} variant="outline" className="bg-primary/10 border-primary/30 text-primary-foreground">{depTitle}</Badge>)}
+                  {task.dependentTaskTitles.map(depTitle => <Badge key={depTitle} variant="outline" className="bg-primary/10 border-primary/30 text-primary">{depTitle}</Badge>)}
                 </div>
               </div>
             )}
@@ -182,15 +193,19 @@ export function TaskDetailsDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex-col sm:flex-row pt-4 border-t">
+        <DialogFooter className="flex-col sm:flex-row pt-4 border-t mt-auto"> {/* mt-auto pushes footer to bottom if content is short */}
             <Textarea
                 placeholder="Add a comment..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 className="flex-1 min-h-[60px]"
                 rows={2}
+                disabled={isSubmittingComment}
             />
-            <Button onClick={handleAddComment} disabled={newComment.trim() === ''}>Add Comment</Button>
+            <Button onClick={handleAddCommentSubmit} disabled={newComment.trim() === '' || isSubmittingComment}>
+                {isSubmittingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Add Comment
+            </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

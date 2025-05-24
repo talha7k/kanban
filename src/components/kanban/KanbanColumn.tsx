@@ -3,12 +3,12 @@
 
 import type { Column, Task, UserProfile } from '@/lib/types';
 import { TaskCard } from './TaskCard';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface KanbanColumnProps {
   column: Column;
-  tasks: Task[]; // These are already filtered tasks for the current project/column context
+  tasks: Task[]; 
   users: UserProfile[];
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
@@ -17,11 +17,12 @@ interface KanbanColumnProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onViewTaskDetails: (task: Task) => void;
+  isSubmitting?: boolean; // To disable "Add Task" button during operations
 }
 
 export function KanbanColumn({
   column,
-  tasks, // Expects tasks already filtered for this specific column by the parent (KanbanBoard)
+  tasks,
   users,
   onDragStart,
   onDragOver,
@@ -30,8 +31,8 @@ export function KanbanColumn({
   onEditTask,
   onDeleteTask,
   onViewTaskDetails,
+  isSubmitting,
 }: KanbanColumnProps) {
-  // KanbanBoard now filters tasks by project. Here, we filter by columnId for this specific column.
   const columnTasks = tasks
     .filter(task => task.columnId === column.id)
     .sort((a, b) => a.order - b.order);
@@ -57,6 +58,7 @@ export function KanbanColumn({
             onEdit={onEditTask}
             onDelete={onDeleteTask}
             onViewDetails={onViewTaskDetails}
+            isSubmitting={isSubmitting}
           />
         ))}
         {columnTasks.length === 0 && (
@@ -65,8 +67,14 @@ export function KanbanColumn({
           </div>
         )}
       </div>
-      <Button variant="ghost" className="w-full mt-3 text-muted-foreground hover:text-foreground justify-start" onClick={() => onAddTask(column.id)}>
-        <PlusCircle className="mr-2 h-4 w-4" /> Add Task
+      <Button 
+        variant="ghost" 
+        className="w-full mt-3 text-muted-foreground hover:text-foreground justify-start" 
+        onClick={() => onAddTask(column.id)}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+        Add Task
       </Button>
     </div>
   );

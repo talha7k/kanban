@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,14 +16,15 @@ import {
 import type { Task, UserProfile, AIPrioritySuggestion } from '@/lib/types';
 import { TaskFormFields, type TaskFormData } from './TaskFormFields';
 import { AIPrioritySuggestor } from "./AIPrioritySuggestor";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect
+import { Loader2 } from "lucide-react";
 
 const taskFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
+  title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less."),
+  description: z.string().max(500, "Description must be 500 characters or less.").optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'NONE']),
   assigneeUids: z.array(z.string()).optional(),
-  dueDate: z.string().optional(), // Stored as YYYY-MM-DD string
+  dueDate: z.string().optional(), 
   tags: z.array(z.string()).optional(),
   dependentTaskTitles: z.array(z.string()).optional(),
 });
@@ -30,10 +32,11 @@ const taskFormSchema = z.object({
 interface AddTaskDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddTask: (taskData: TaskFormData, columnId: string) => void;
+  onAddTask: (taskData: TaskFormData, columnId: string) => Promise<void> | void; // Can be async
   columnId: string | null;
   users: UserProfile[];
   allTasksForDependencies: Pick<Task, 'id' | 'title'>[];
+  isSubmitting?: boolean; // Passed from parent
 }
 
 export function AddTaskDialog({
@@ -42,7 +45,8 @@ export function AddTaskDialog({
   onAddTask,
   columnId,
   users,
-  allTasksForDependencies
+  allTasksForDependencies,
+  isSubmitting
 }: AddTaskDialogProps) {
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -53,15 +57,25 @@ export function AddTaskDialog({
       assigneeUids: [],
       dependentTaskTitles: [],
       tags: [],
+      dueDate: undefined,
     },
   });
   
   const [currentTaskDataForAI, setCurrentTaskDataForAI] = useState<Partial<TaskFormData>>({});
 
-  const onSubmit = (data: TaskFormData) => {
-    if (!columnId) return; // Should not happen if dialog is open
-    onAddTask(data, columnId);
+  const onSubmit = async (data: TaskFormData) => {
+    if (!columnId) return; 
+    await onAddTask(data, columnId); // onAddTask might be async now
+    // Resetting form and closing dialog should ideally happen if onAddTask is successful
+    // Parent component (KanbanBoard) handles toast and dialog closing on success/failure
+    // For now, let's assume parent handles this. If not, add try/catch here or pass success callback.
+    // form.reset();
+    // onOpenChange(false);
+  };
+
+  const handleDialogClose = () => {
     form.reset();
+    setCurrentTaskDataForAI({});
     onOpenChange(false);
   };
 
@@ -69,22 +83,21 @@ export function AddTaskDialog({
     form.setValue('priority', suggestion.suggestedPriority);
   };
 
-  // Update currentTaskDataForAI when form values change for AI suggestor
   const watchedValues = form.watch();
-  useState(() => { // useEffect might be better but useState for simplicity with current form structure
+  useEffect(() => { 
     setCurrentTaskDataForAI({
         title: watchedValues.title,
         description: watchedValues.description,
         dueDate: watchedValues.dueDate,
         dependentTaskTitles: watchedValues.dependentTaskTitles,
     });
-  });
+  }, [watchedValues.title, watchedValues.description, watchedValues.dueDate, watchedValues.dependentTaskTitles]);
 
 
   if (!isOpen || !columnId) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { form.reset(); onOpenChange(open); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleDialogClose(); else onOpenChange(open); }}>
       <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Task</DialogTitle>
@@ -96,16 +109,19 @@ export function AddTaskDialog({
           <TaskFormFields form={form} users={users} allTasksForDependencies={allTasksForDependencies} />
           <AIPrioritySuggestor 
             task={{
-              title: watchedValues.title || '',
-              description: watchedValues.description || '',
-              dueDate: watchedValues.dueDate,
-              dependentTaskTitles: watchedValues.dependentTaskTitles,
+              title: currentTaskDataForAI.title || '', // Use state for AI suggestor
+              description: currentTaskDataForAI.description || '',
+              dueDate: currentTaskDataForAI.dueDate,
+              dependentTaskTitles: currentTaskDataForAI.dependentTaskTitles,
             }}
             onSuggestion={handleAISuggestion}
           />
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }}>Cancel</Button>
-            <Button type="submit">Save Task</Button>
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save Task
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { NewProjectData } from '@/lib/types';
+import { Loader2 } from "lucide-react"; // For loading indicator
+import { useState } from "react";
 
 const projectFormSchema = z.object({
   name: z.string().min(3, { message: "Project name must be at least 3 characters long." }).max(50, { message: "Project name must be 50 characters or less." }),
@@ -28,7 +30,7 @@ type ProjectFormData = z.infer<typeof projectFormSchema>;
 interface CreateProjectDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddProject: (projectData: NewProjectData) => void;
+  onAddProject: (projectData: NewProjectData) => Promise<void> | void; // Can be async
 }
 
 export function CreateProjectDialog({
@@ -36,6 +38,7 @@ export function CreateProjectDialog({
   onOpenChange,
   onAddProject,
 }: CreateProjectDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
@@ -44,14 +47,30 @@ export function CreateProjectDialog({
     },
   });
 
-  const onSubmit = (data: ProjectFormData) => {
-    onAddProject(data);
-    form.reset();
-    onOpenChange(false);
+  const onSubmit = async (data: ProjectFormData) => {
+    setIsSubmitting(true);
+    try {
+      await onAddProject(data);
+      // onOpenChange(false) and form.reset() are typically called by the parent (DashboardPage) on success
+    } catch (error) {
+      // Error toast is handled by parent (DashboardPage)
+      console.error("Project creation submission failed in dialog:", error);
+    } finally {
+      setIsSubmitting(false);
+      // Only reset and close if submission was truly successful,
+      // which is better handled by the parent that controls `isOpen`
+    }
+  };
+  
+  const handleDialogClose = () => {
+    if (!isSubmitting) { // Prevent closing if submitting
+        form.reset();
+        onOpenChange(false);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { form.reset(); onOpenChange(open); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleDialogClose(); else onOpenChange(open); }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
@@ -66,6 +85,7 @@ export function CreateProjectDialog({
               id="name"
               {...form.register("name")}
               placeholder="e.g., Q4 Marketing Campaign"
+              disabled={isSubmitting}
             />
             {form.formState.errors.name && (
               <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
@@ -77,16 +97,20 @@ export function CreateProjectDialog({
               id="description"
               {...form.register("description")}
               placeholder="A brief overview of the project's goals."
+              disabled={isSubmitting}
             />
             {form.formState.errors.description && (
               <p className="text-xs text-destructive">{form.formState.errors.description.message}</p>
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }}>
+            <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit">Save Project</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save Project
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

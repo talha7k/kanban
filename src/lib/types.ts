@@ -9,15 +9,17 @@ export interface UserProfile {
   name: string; // Firebase displayName or mock name
   email?: string; // Firebase email
   avatarUrl?: string; // Firebase photoURL or mock avatar
+  createdAt?: string; // ISO string, from Firestore
 }
 
 export interface Project {
   id: ProjectId;
-  name: string;
+  name:string;
   description?: string;
   ownerId: UserId; // User who created the project
-  columns: Column[];
-  tasks: Task[];
+  columns: Column[]; // Stored with the project
+  tasks: Task[];     // Stored with the project
+  memberIds?: UserId[]; // Users who are members of this project
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }
@@ -33,11 +35,11 @@ export interface Task {
   title: string;
   description?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'NONE';
-  projectId: ProjectId;
+  projectId: ProjectId; // Ensures task is tied to a project context
   columnId: ColumnId;
   order: number; // Order within the column
   assigneeUids?: UserId[];
-  reporterId?: UserId;
+  reporterId?: UserId; // Optional: User who reported/created task
   dueDate?: string; // YYYY-MM-DD
   tags?: string[];
   comments?: Comment[];
@@ -46,23 +48,43 @@ export interface Task {
   updatedAt: string; // ISO string date
 }
 
+// Used for creating a task, some fields are auto-generated
+export type NewTaskData = Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt' | 'comments' | 'order'>;
+
+
 export interface Column {
   id: ColumnId;
   title: string;
-  taskIds: TaskId[]; // Task IDs currently in this column for this project
+  // taskIds: TaskId[]; // Task IDs are now derived by filtering project.tasks by columnId
   order: number; // Order of the column within the project's board
 }
 
 export interface Comment {
   id: string;
   userId: UserId;
-  userName: string;
-  avatarUrl?: string;
+  userName: string; // Denormalized for easy display
+  avatarUrl?: string; // Denormalized
   content: string;
   createdAt: string; // ISO string date
 }
 
+// Used for creating a comment
+export type NewCommentData = Omit<Comment, 'id' | 'createdAt'>;
+
+
 export interface AIPrioritySuggestion {
   suggestedPriority: 'LOW' | 'MEDIUM' | 'HIGH';
   reasoning: string;
+}
+
+// Firestore specific types
+export interface ProjectDocument extends Omit<Project, 'id' | 'tasks' | 'columns'> {
+  // tasks and columns might be subcollections or handled differently depending on final structure
+  // For now, assuming they might be part of the document for simplicity in this update
+  tasks: Task[];
+  columns: Column[];
+}
+
+export interface UserDocument extends Omit<UserProfile, 'id'> {
+  // id is the document ID in Firestore
 }
