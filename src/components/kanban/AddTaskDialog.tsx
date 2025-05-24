@@ -16,7 +16,7 @@ import {
 import type { Task, UserProfile, AIPrioritySuggestion } from '@/lib/types';
 import { TaskFormFields, type TaskFormData } from './TaskFormFields';
 import { AIPrioritySuggestor } from "./AIPrioritySuggestor";
-import { useState, useEffect } from "react"; // Added useEffect
+import { useState, useEffect } from "react"; 
 import { Loader2 } from "lucide-react";
 
 const taskFormSchema = z.object({
@@ -32,11 +32,11 @@ const taskFormSchema = z.object({
 interface AddTaskDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddTask: (taskData: TaskFormData, columnId: string) => Promise<void> | void; // Can be async
+  onAddTask: (taskData: TaskFormData, columnId: string) => Promise<void> | void; 
   columnId: string | null;
   users: UserProfile[];
   allTasksForDependencies: Pick<Task, 'id' | 'title'>[];
-  isSubmitting?: boolean; // Passed from parent
+  isSubmitting?: boolean; 
 }
 
 export function AddTaskDialog({
@@ -65,18 +65,24 @@ export function AddTaskDialog({
 
   const onSubmit = async (data: TaskFormData) => {
     if (!columnId) return; 
-    await onAddTask(data, columnId); // onAddTask might be async now
-    // Resetting form and closing dialog should ideally happen if onAddTask is successful
-    // Parent component (KanbanBoard) handles toast and dialog closing on success/failure
-    // For now, let's assume parent handles this. If not, add try/catch here or pass success callback.
-    // form.reset();
-    // onOpenChange(false);
+    try {
+      await onAddTask(data, columnId); 
+      form.reset(); // Reset form on successful submission
+      setCurrentTaskDataForAI({}); // Clear AI data as well
+      onOpenChange(false); // Close dialog on successful submission
+    } catch (error) {
+      // Parent component (KanbanBoard) handles toast on error
+      console.error("Error submitting task from dialog:", error);
+      // Dialog remains open for correction if submission fails
+    }
   };
 
   const handleDialogClose = () => {
-    form.reset();
-    setCurrentTaskDataForAI({});
-    onOpenChange(false);
+    if (!isSubmitting) { // Prevent closing if parent is submitting
+        form.reset();
+        setCurrentTaskDataForAI({});
+        onOpenChange(false);
+    }
   };
 
   const handleAISuggestion = (suggestion: AIPrioritySuggestion) => {
@@ -109,7 +115,7 @@ export function AddTaskDialog({
           <TaskFormFields form={form} users={users} allTasksForDependencies={allTasksForDependencies} />
           <AIPrioritySuggestor 
             task={{
-              title: currentTaskDataForAI.title || '', // Use state for AI suggestor
+              title: currentTaskDataForAI.title || '', 
               description: currentTaskDataForAI.description || '',
               dueDate: currentTaskDataForAI.dueDate,
               dependentTaskTitles: currentTaskDataForAI.dependentTaskTitles,

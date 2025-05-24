@@ -7,14 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { NewProjectData, Project, UserProfile } from '@/lib/types';
 import { CreateProjectDialog } from '@/components/dashboard/CreateProjectDialog';
-import { PlusCircle, Users, FolderKanban, Loader2, Briefcase } from 'lucide-react'; // Added Briefcase for title
+import { ManageProjectMembersDialog } from '@/components/dashboard/ManageProjectMembersDialog'; // New Dialog
+import { PlusCircle, Users, FolderKanban, Loader2, Briefcase, Settings2 } from 'lucide-react'; 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { getProjectsForUser, getAllUserProfiles, createProject as createProjectInDb } from '@/lib/firebaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge'; // For displaying role
+import { Badge } from '@/components/ui/badge';
 
 export default function DashboardPage() {
   const { currentUser, userProfile } = useAuth();
@@ -23,34 +24,38 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
+  const [isManageMembersDialogOpen, setIsManageMembersDialogOpen] = useState(false); // State for new dialog
+  const [selectedProjectForMembers, setSelectedProjectForMembers] = useState<Project | null>(null); // State for selected project
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
+  const fetchDashboardData = async () => {
+    if (!currentUser?.uid) return;
+    setIsLoadingProjects(true);
+    setIsLoadingUsers(true);
+    try {
+      const userProjects = await getProjectsForUser(currentUser.uid);
+      setProjects(userProjects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      toast({ variant: "destructive", title: "Error", description: "Could not load projects." });
+    } finally {
+      setIsLoadingProjects(false);
+    }
+
+    try {
+      const fetchedUsers = await getAllUserProfiles();
+      setAllUsers(fetchedUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast({ variant: "destructive", title: "Error", description: "Could not load users." });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
   useEffect(() => {
     if (currentUser?.uid) {
-      const fetchDashboardData = async () => {
-        setIsLoadingProjects(true);
-        setIsLoadingUsers(true);
-        try {
-          const userProjects = await getProjectsForUser(currentUser.uid);
-          setProjects(userProjects);
-        } catch (error) {
-          console.error("Error fetching projects:", error);
-          toast({ variant: "destructive", title: "Error", description: "Could not load projects." });
-        } finally {
-          setIsLoadingProjects(false);
-        }
-
-        try {
-          const fetchedUsers = await getAllUserProfiles();
-          setAllUsers(fetchedUsers);
-        } catch (error) {
-          console.error("Error fetching users:", error);
-          toast({ variant: "destructive", title: "Error", description: "Could not load users." });
-        } finally {
-          setIsLoadingUsers(false);
-        }
-      };
       fetchDashboardData();
     }
   }, [currentUser, toast]);
@@ -71,6 +76,15 @@ export default function DashboardPage() {
       toast({ variant: "destructive", title: "Creation Failed", description: errorMessage });
     }
   };
+
+  const openManageMembersDialog = (project: Project) => {
+    setSelectedProjectForMembers(project);
+    setIsManageMembersDialogOpen(true);
+  };
+
+  const onMembersUpdated = () => {
+    fetchDashboardData(); // Refetch projects and users after members are updated
+  }
 
   return (
     <div className="container mx-auto py-8">
@@ -96,8 +110,8 @@ export default function DashboardPage() {
           <CardContent>
             {isLoadingProjects ? (
               <div className="space-y-4">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
               <ScrollArea className="h-[400px] pr-4">
@@ -108,10 +122,32 @@ export default function DashboardPage() {
                         <CardTitle className="text-lg">{project.name}</CardTitle>
                         <CardDescription className="line-clamp-2 h-[40px]">{project.description || 'No description available.'}</CardDescription>
                       </CardHeader>
-                      <CardFooter>
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/projects/${project.id}`}>View Board</Link>
-                        </Button>
+                      <CardFooter className="flex flex-col items-start space-y-2">
+                        <div className="flex items-center space-x-2 mb-2">
+                            {(project.memberIds || []).slice(0, 3).map(memberId => {
+                                const member = allUsers.find(u => u.id === memberId);
+                                return member ? (
+                                    <Avatar key={member.id} className="h-6 w-6 border-2 border-card">
+                                        <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint="profile small"/>
+                                        <AvatarFallback>{member.name?.substring(0,1).toUpperCase() || 'U'}</AvatarFallback>
+                                    </Avatar>
+                                ) : null;
+                            })}
+                            {(project.memberIds?.length || 0) > 3 && (
+                                <Avatar className="h-6 w-6 border-2 border-card">
+                                    <AvatarFallback>+{(project.memberIds?.length || 0) - 3}</AvatarFallback>
+                                </Avatar>
+                            )}
+                            <span className="text-xs text-muted-foreground">{(project.memberIds?.length || 0)} Member(s)</span>
+                        </div>
+                        <div className="flex space-x-2">
+                            <Button asChild variant="outline" size="sm">
+                                <Link href={`/projects/${project.id}`}>View Board</Link>
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => openManageMembersDialog(project)}>
+                                <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Members
+                            </Button>
+                        </div>
                       </CardFooter>
                     </Card>
                   ))}
@@ -178,6 +214,18 @@ export default function DashboardPage() {
           isOpen={isCreateProjectDialogOpen}
           onOpenChange={setIsCreateProjectDialogOpen}
           onAddProject={handleAddProject}
+        />
+      )}
+      {selectedProjectForMembers && (
+        <ManageProjectMembersDialog
+          project={selectedProjectForMembers}
+          allUsers={allUsers}
+          isOpen={isManageMembersDialogOpen}
+          onOpenChange={(isOpen) => {
+            setIsManageMembersDialogOpen(isOpen);
+            if (!isOpen) setSelectedProjectForMembers(null);
+          }}
+          onMembersUpdate={onMembersUpdated}
         />
       )}
     </div>

@@ -69,12 +69,12 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
   const handleAddTask = async (taskData: TaskFormData, columnId: string) => {
     setIsSubmitting(true);
-    if (!currentUser) { // Check Firebase Auth user
-      toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to add tasks." });
+    if (!currentUser) { 
+      toast({ variant: "destructive", title: "Authentication Error", description: "User must be authenticated to add tasks." });
       setIsSubmitting(false);
       return;
     }
-    if (!userProfile) { // Check Firestore user profile
+    if (!userProfile) { 
         toast({ variant: "default", title: "User Profile Warning", description: "User profile not fully loaded. Task will be created without a reporter if you proceed." });
     }
 
@@ -83,12 +83,10 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       reporterId: userProfile ? userProfile.id : undefined, 
     };
 
-    console.log("Attempting to add task with payload:", newTaskPayload); // Enhanced logging
+    console.log("Attempting to add task with payload:", newTaskPayload); 
 
     try {
       const newTask = await addTaskToProject(projectData.id, newTaskPayload, columnId);
-      // Optimistic update (or refetch for consistency)
-      // For simplicity, doing an optimistic update. Consider refetching for critical consistency.
       setProjectData(prevProject => {
         if (!prevProject) return prevProject;
         return {
@@ -98,7 +96,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       });
       toast({ title: "Task Added", description: `"${newTask.title}" has been added.` });
       setIsAddTaskDialogOpen(false); // Close dialog on success
-      form.reset(); // Reset form in AddTaskDialog, might need to pass form instance or a reset callback
+      // Form reset is now handled within AddTaskDialog
     } catch (error) {
       console.error("Error adding task:", error, "Payload:", newTaskPayload);
       toast({ variant: "destructive", title: "Error Adding Task", description: error instanceof Error ? error.message : "Could not add task." });
@@ -110,7 +108,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const handleEditTask = async (taskId: string, taskData: TaskFormData) => {
     setIsSubmitting(true);
     if (!currentUser) {
-      toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to edit tasks." });
+      toast({ variant: "destructive", title: "Authentication Error", description: "User must be authenticated to edit tasks." });
       setIsSubmitting(false);
       return;
     }
@@ -150,7 +148,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     if (!taskToDeleteId) return;
     setIsSubmitting(true);
     if (!currentUser) {
-      toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to delete tasks." });
+      toast({ variant: "destructive", title: "Authentication Error", description: "User must be authenticated to delete tasks." });
       setIsSubmitting(false);
       setShowDeleteConfirm(false);
       return;
@@ -179,7 +177,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
   const handleAddComment = async (taskId: string, commentText: string) => {
      if (!currentUser) { 
-        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to add comments." });
+        toast({ variant: "destructive", title: "Authentication Error", description: "User must be authenticated to add comments." });
         return;
     }
     if (!userProfile) { 
@@ -221,7 +219,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const onDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: TaskId) => {
-    if (isSubmitting) return; // Prevent drag if any operation is in progress
+    if (isSubmitting) return; 
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("taskId", taskId);
     setDraggedTaskId(taskId);
@@ -234,7 +232,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
   const onDrop = async (e: React.DragEvent<HTMLDivElement>, targetColumnId: ColumnId) => {
     e.preventDefault();
-    if (isSubmitting) { // Prevent drop if any operation is in progress
+    if (isSubmitting) { 
         setDraggedTaskId(null);
         return;
     }
@@ -247,24 +245,21 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         return;
     }
     
-    // Optimistic UI update
-    const originalTasks = [...projectData.tasks]; // Keep a copy for potential rollback
+    const originalTasks = [...projectData.tasks]; 
     let movedTaskOrder = 0;
 
     const updatedTasksOptimistic = projectData.tasks.map(task => {
         if (task.id === sourceTaskId) {
-            // Calculate new order: append to the end of the target column
             movedTaskOrder = projectData.tasks.filter(t => t.columnId === targetColumnId && t.id !== sourceTaskId).length;
             return { ...task, columnId: targetColumnId, order: movedTaskOrder, updatedAt: new Date().toISOString() };
         }
         return task;
     });
-     // Re-sort tasks for display based on new order and column
+ 
     updatedTasksOptimistic.sort((a, b) => {
         if (a.columnId === b.columnId) {
             return a.order - b.order;
         }
-        // If you have a predefined column order, sort by that here, otherwise keep original project column order
         const columnAOrder = projectData.columns.find(c => c.id === a.columnId)?.order ?? 0;
         const columnBOrder = projectData.columns.find(c => c.id === b.columnId)?.order ?? 0;
         return columnAOrder - columnBOrder;
@@ -272,24 +267,18 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
 
     setProjectData(prev => ({ ...prev!, tasks: updatedTasksOptimistic }));
-    setDraggedTaskId(null); // Clear dragged task early for smoother UI
+    setDraggedTaskId(null); 
     setIsSubmitting(true);
 
     try {
       await moveTaskInProject(projectData.id, sourceTaskId, targetColumnId, movedTaskOrder);
-      // Optionally refetch project to ensure consistency, or rely on optimistic update.
-      // For now, relying on optimistic update and server success.
-      // const latestProjectData = await getProjectById(projectData.id);
-      // if (latestProjectData) setProjectData(latestProjectData);
-
       toast({ title: "Task Moved", description: `"${taskBeingMoved.title}" moved.` });
     } catch (error) {
       console.error("Error moving task:", error);
       toast({ variant: "destructive", title: "Error Moving Task", description: error instanceof Error ? error.message : "Could not move task." });
-      setProjectData(prev => ({ ...prev!, tasks: originalTasks })); // Rollback optimistic update
+      setProjectData(prev => ({ ...prev!, tasks: originalTasks })); 
     } finally {
       setIsSubmitting(false);
-      // draggedTaskId is already cleared
     }
   };
 
@@ -342,7 +331,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         isOpen={isAddTaskDialogOpen}
         onOpenChange={(isOpen) => {
           setIsAddTaskDialogOpen(isOpen);
-          if (!isOpen) setSelectedColumnIdForNewTask(null); // Clear selected column on close
+          if (!isOpen) setSelectedColumnIdForNewTask(null); 
         }}
         onAddTask={handleAddTask}
         columnId={selectedColumnIdForNewTask}
@@ -354,7 +343,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         isOpen={isEditTaskDialogOpen}
         onOpenChange={(isOpen) => {
           setIsEditTaskDialogOpen(isOpen);
-          if (!isOpen) setTaskToEdit(null); // Clear task to edit on close
+          if (!isOpen) setTaskToEdit(null); 
         }}
         onEditTask={handleEditTask}
         taskToEdit={taskToEdit}
@@ -366,7 +355,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         isOpen={isTaskDetailsDialogOpen}
         onOpenChange={(isOpen) => {
           setIsTaskDetailsDialogOpen(isOpen);
-          if (!isOpen) setTaskToView(null); // Clear task to view on close
+          if (!isOpen) setTaskToView(null); 
         }}
         task={taskToView}
         users={users}
@@ -399,10 +388,4 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       </AlertDialog>
     </div>
   );
-}
-
-declare global { // To help with form reset, if AddTaskDialog exposes it.
-    interface Window {
-        resetAddTaskForm?: () => void;
-    }
 }
