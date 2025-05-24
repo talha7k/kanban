@@ -34,7 +34,7 @@ interface AddTaskDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   onAddTask: (taskData: TaskFormData, columnId: string) => Promise<void> | void; 
   columnId: string | null;
-  users: UserProfile[];
+  assignableUsers: UserProfile[]; // Changed from 'users'
   allTasksForDependencies: Pick<Task, 'id' | 'title'>[];
   isSubmitting?: boolean; 
 }
@@ -44,7 +44,7 @@ export function AddTaskDialog({
   onOpenChange,
   onAddTask,
   columnId,
-  users,
+  assignableUsers, // Changed from 'users'
   allTasksForDependencies,
   isSubmitting
 }: AddTaskDialogProps) {
@@ -67,18 +67,16 @@ export function AddTaskDialog({
     if (!columnId) return; 
     try {
       await onAddTask(data, columnId); 
-      form.reset(); // Reset form on successful submission
-      setCurrentTaskDataForAI({}); // Clear AI data as well
-      onOpenChange(false); // Close dialog on successful submission
+      form.reset(); 
+      setCurrentTaskDataForAI({}); 
+      onOpenChange(false); 
     } catch (error) {
-      // Parent component (KanbanBoard) handles toast on error
       console.error("Error submitting task from dialog:", error);
-      // Dialog remains open for correction if submission fails
     }
   };
 
   const handleDialogClose = () => {
-    if (!isSubmitting) { // Prevent closing if parent is submitting
+    if (!isSubmitting) { 
         form.reset();
         setCurrentTaskDataForAI({});
         onOpenChange(false);
@@ -112,7 +110,7 @@ export function AddTaskDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <TaskFormFields form={form} users={users} allTasksForDependencies={allTasksForDependencies} />
+          <TaskFormFields form={form} assignableUsers={assignableUsers} allTasksForDependencies={allTasksForDependencies} />
           <AIPrioritySuggestor 
             task={{
               title: currentTaskDataForAI.title || '', 
@@ -134,3 +132,5 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
+
+    

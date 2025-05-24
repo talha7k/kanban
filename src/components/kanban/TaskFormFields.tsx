@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { UserProfile, Task } from '@/lib/types';
@@ -22,18 +23,18 @@ export interface TaskFormData {
   priority: Task['priority'];
   assigneeUids?: string[];
   dueDate?: string; // YYYY-MM-DD string
-  tags?: string[]; // For simplicity, string array. Could be objects.
-  dependentTaskTitles?: string[]; // For AI
+  tags?: string[]; 
+  dependentTaskTitles?: string[]; 
 }
 
 interface TaskFormFieldsProps {
-  form: UseFormReturn<TaskFormData>; // Use the specific form data type
-  users: UserProfile[];
-  allTasksForDependencies: Pick<Task, 'id' | 'title'>[]; // For dependent tasks selector
+  form: UseFormReturn<TaskFormData>; 
+  assignableUsers: UserProfile[]; // Changed from 'users'
+  allTasksForDependencies: Pick<Task, 'id' | 'title'>[]; 
   isEditing?: boolean;
 }
 
-export function TaskFormFields({ form, users, allTasksForDependencies, isEditing = false }: TaskFormFieldsProps) {
+export function TaskFormFields({ form, assignableUsers, allTasksForDependencies, isEditing = false }: TaskFormFieldsProps) {
   const { register, control, watch, setValue } = form;
 
   const selectedAssignees = watch('assigneeUids') || [];
@@ -114,7 +115,7 @@ export function TaskFormFields({ form, users, allTasksForDependencies, isEditing
                     <PopoverTrigger asChild>
                         <Button variant="outline" role="combobox" className="w-full justify-between">
                             {selectedAssignees.length > 0
-                                ? users.filter(user => selectedAssignees.includes(user.id)).map(user => user.name).join(', ')
+                                ? assignableUsers.filter(user => selectedAssignees.includes(user.id)).map(user => user.name).join(', ')
                                 : "Select assignees..."}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -123,9 +124,9 @@ export function TaskFormFields({ form, users, allTasksForDependencies, isEditing
                         <Command>
                             <CommandInput placeholder="Search users..." />
                             <CommandList>
-                                <CommandEmpty>No users found.</CommandEmpty>
+                                <CommandEmpty>No users found in this project.</CommandEmpty>
                                 <CommandGroup>
-                                    {users.map((user) => (
+                                    {assignableUsers.map((user) => (
                                         <CommandItem
                                             key={user.id}
                                             value={user.name}
@@ -204,7 +205,8 @@ export function TaskFormFields({ form, users, allTasksForDependencies, isEditing
             )}
         />
       </div>
-      {/* Tags field could be added here similar to assignees or dependencies if needed */}
     </div>
   );
 }
+
+    

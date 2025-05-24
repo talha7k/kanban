@@ -32,11 +32,11 @@ const taskFormSchema = z.object({
 interface EditTaskDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onEditTask: (taskId: string, taskData: TaskFormData) => Promise<void> | void; // Can be async
+  onEditTask: (taskId: string, taskData: TaskFormData) => Promise<void> | void; 
   taskToEdit: Task | null;
-  users: UserProfile[];
+  assignableUsers: UserProfile[]; // Changed from 'users'
   allTasksForDependencies: Pick<Task, 'id' | 'title'>[];
-  isSubmitting?: boolean; // Passed from parent
+  isSubmitting?: boolean; 
 }
 
 export function EditTaskDialog({
@@ -44,19 +44,18 @@ export function EditTaskDialog({
   onOpenChange,
   onEditTask,
   taskToEdit,
-  users,
+  assignableUsers, // Changed from 'users'
   allTasksForDependencies,
   isSubmitting
 }: EditTaskDialogProps) {
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
-    // Default values will be set by useEffect when taskToEdit is available
   });
   
   const [currentTaskDataForAI, setCurrentTaskDataForAI] = useState<Partial<TaskFormData>>({});
 
   useEffect(() => {
-    if (taskToEdit && isOpen) { // Reset form only when dialog opens with a task
+    if (taskToEdit && isOpen) { 
       const defaultValues: TaskFormData = {
         title: taskToEdit.title,
         description: taskToEdit.description || "",
@@ -67,9 +66,9 @@ export function EditTaskDialog({
         dependentTaskTitles: taskToEdit.dependentTaskTitles || [],
       };
       form.reset(defaultValues);
-      setCurrentTaskDataForAI(defaultValues); // Initialize AI data
+      setCurrentTaskDataForAI(defaultValues); 
     } else if (!isOpen) {
-      form.reset({ // Clear form when dialog closes
+      form.reset({ 
         title: "",
         description: "",
         priority: 'NONE',
@@ -85,7 +84,6 @@ export function EditTaskDialog({
   const onSubmit = async (data: TaskFormData) => {
     if (!taskToEdit) return;
     await onEditTask(taskToEdit.id, data);
-    // Dialog closing and form reset handled by useEffect or parent on success
   };
   
   const handleAISuggestion = (suggestion: AIPrioritySuggestion) => {
@@ -100,7 +98,7 @@ export function EditTaskDialog({
         dueDate: watchedValues.dueDate,
         dependentTaskTitles: watchedValues.dependentTaskTitles,
     });
-  }, [watchedValues.title, watchedValues.description, watchedValues.dueDate, watchedValues.dependentTaskTitles, isOpen]); // re-run if isOpen changes to ensure AI data is fresh
+  }, [watchedValues.title, watchedValues.description, watchedValues.dueDate, watchedValues.dependentTaskTitles, isOpen]); 
 
 
   if (!isOpen || !taskToEdit) return null;
@@ -117,7 +115,7 @@ export function EditTaskDialog({
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <TaskFormFields 
             form={form} 
-            users={users} 
+            assignableUsers={assignableUsers} // Pass filtered list
             allTasksForDependencies={allTasksForDependencies.filter(t => t.id !== taskToEdit.id)} 
             isEditing 
           />
@@ -142,3 +140,5 @@ export function EditTaskDialog({
     </Dialog>
   );
 }
+
+    

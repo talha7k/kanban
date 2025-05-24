@@ -6,7 +6,7 @@ import { KanbanColumn } from './KanbanColumn';
 import { AddTaskDialog } from './AddTaskDialog';
 import { EditTaskDialog } from './EditTaskDialog';
 import { TaskDetailsDialog } from './TaskDetailsDialog';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { TaskFormData } from './TaskFormFields';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
@@ -57,6 +57,16 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     setProjectData(initialProject);
   }, [initialProject]);
 
+  const assignableUsers = useMemo(() => {
+    if (!projectData || !users) return [];
+    const memberAndOwnerIds = new Set<string>([
+      projectData.ownerId,
+      ...(projectData.memberIds || [])
+    ]);
+    return users.filter(user => memberAndOwnerIds.has(user.id));
+  }, [projectData, users]);
+
+
   if (!projectData || !users) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -76,6 +86,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     }
     if (!userProfile) { 
         toast({ variant: "default", title: "User Profile Warning", description: "User profile not fully loaded. Task will be created without a reporter if you proceed." });
+        // Continue, reporterId is optional
     }
 
     const newTaskPayload: NewTaskData = {
@@ -96,7 +107,6 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       });
       toast({ title: "Task Added", description: `"${newTask.title}" has been added.` });
       setIsAddTaskDialogOpen(false); // Close dialog on success
-      // Form reset is now handled within AddTaskDialog
     } catch (error) {
       console.error("Error adding task:", error, "Payload:", newTaskPayload);
       toast({ variant: "destructive", title: "Error Adding Task", description: error instanceof Error ? error.message : "Could not add task." });
@@ -309,7 +319,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             key={column.id}
             column={column}
             tasks={projectData.tasks} 
-            users={users}
+            users={users} // Pass all users for general display if needed, assignableUsers is for forms
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
@@ -335,7 +345,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         }}
         onAddTask={handleAddTask}
         columnId={selectedColumnIdForNewTask}
-        users={users}
+        assignableUsers={assignableUsers}
         allTasksForDependencies={allTasksForDependencies}
         isSubmitting={isSubmitting}
       />
@@ -347,7 +357,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         }}
         onEditTask={handleEditTask}
         taskToEdit={taskToEdit}
-        users={users}
+        assignableUsers={assignableUsers}
         allTasksForDependencies={allTasksForDependencies}
         isSubmitting={isSubmitting}
       />
@@ -358,7 +368,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           if (!isOpen) setTaskToView(null); 
         }}
         task={taskToView}
-        users={users}
+        users={users} // TaskDetails can show any user (e.g. reporter not in project members)
         onAddComment={handleAddComment}
         onEditTask={(task) => { setIsTaskDetailsDialogOpen(false); setTaskToEdit(task); setIsEditTaskDialogOpen(true); }}
         onDeleteTask={openDeleteConfirm}
@@ -389,3 +399,5 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     </div>
   );
 }
+
+    
