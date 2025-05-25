@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,8 +36,14 @@ export default function SignupPage() {
     resolver: zodResolver(signupSchema),
   });
   
-  if (currentUser) {
-    router.push('/dashboard'); // Redirect if already logged in
+  useEffect(() => {
+    if (currentUser) {
+      router.push('/dashboard'); // Redirect if already logged in
+    }
+  }, [currentUser, router]);
+
+  if (currentUser && !authLoading) {
+     // Return null or a loading indicator while redirecting
     return null;
   }
 

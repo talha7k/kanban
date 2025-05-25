@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Settings } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { EditProjectDialog } from '@/components/project/EditProjectDialog'; // New import
+import { EditProjectDialog } from '@/components/project/EditProjectDialog'; 
 
 export default function ProjectPage({ params }: { params: { projectId: string } }) {
   const { currentUser } = useAuth();
@@ -24,31 +24,31 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
 
   useEffect(() => {
-    if (params.projectId && currentUser) { 
+    const projectId = params.projectId; // Capture projectId for stable dependency
+    if (projectId && currentUser) { 
       const fetchProjectData = async () => {
         setIsLoadingProject(true);
         setIsLoadingUsers(true);
         setError(null);
         try {
           const [fetchedProject, fetchedUsers] = await Promise.all([
-            getProjectById(params.projectId),
+            getProjectById(projectId),
             getAllUserProfiles()
           ]);
 
           if (fetchedProject) {
-            // Permission check (is currentUser member or owner?)
             const isMember = fetchedProject.memberIds?.includes(currentUser.uid) || fetchedProject.ownerId === currentUser.uid;
             if (isMember) {
               setProject(fetchedProject);
             } else {
-              setError(`You do not have access to project ${params.projectId}.`);
+              setError(`You do not have access to project ${projectId}.`);
               setProject(null);
               toast({ variant: "destructive", title: "Access Denied", description: `You do not have permission to view this project.` });
             }
           } else {
-            setError(`Project with ID ${params.projectId} not found.`);
+            setError(`Project with ID ${projectId} not found.`);
             setProject(null);
-            toast({ variant: "destructive", title: "Project Not Found", description: `Could not load project ${params.projectId}.` });
+            toast({ variant: "destructive", title: "Project Not Found", description: `Could not load project ${projectId}.` });
           }
           setUsers(fetchedUsers);
 
@@ -67,7 +67,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         setIsLoadingProject(false);
         setIsLoadingUsers(false);
     }
-  }, [params.projectId, currentUser, toast]);
+  }, [params.projectId, currentUser, toast]); // Keep params.projectId as dependency
 
   const handleEditProjectSubmit = async (data: { name: string; description?: string }) => {
     if (!project || !currentUser || currentUser.uid !== project.ownerId) {
@@ -130,19 +130,28 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   return (
     <div className="h-full flex flex-col">
        <div className="p-4 border-b bg-card">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-card-foreground flex items-center">
-            {project.name}
-            {currentUser?.uid === project.ownerId && (
-              <Button variant="ghost" size="icon" onClick={() => setIsEditProjectDialogOpen(true)} className="ml-3" disabled={isSubmittingProjectEdit}>
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Edit Project Details</span>
-              </Button>
-            )}
-          </h1>
-          <Link href="/dashboard">
-            <Button variant="outline">Back to Dashboard</Button>
-          </Link>
+        <div className="container mx-auto">
+            <div className="flex justify-between items-start sm:items-center flex-col sm:flex-row">
+                <div className="flex-1 mb-2 sm:mb-0">
+                    <div className="flex items-center">
+                        <h1 className="text-2xl font-bold text-card-foreground flex items-center">
+                            {project.name}
+                        </h1>
+                        {currentUser?.uid === project.ownerId && (
+                        <Button variant="ghost" size="icon" onClick={() => setIsEditProjectDialogOpen(true)} className="ml-3" disabled={isSubmittingProjectEdit}>
+                            <Settings className="h-5 w-5" />
+                            <span className="sr-only">Edit Project Details</span>
+                        </Button>
+                        )}
+                    </div>
+                    {project.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
+                    )}
+                </div>
+                <Link href="/dashboard">
+                    <Button variant="outline">Back to Dashboard</Button>
+                </Link>
+            </div>
         </div>
       </div>
       <div className="flex-1 min-h-0"> {/* Allows KanbanBoard to take remaining height */}
@@ -160,4 +169,3 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     </div>
   );
 }
-

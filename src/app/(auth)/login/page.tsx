@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,8 +32,14 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  if (currentUser) {
-    router.push('/dashboard'); // Redirect if already logged in
+  useEffect(() => {
+    if (currentUser) {
+      router.push('/dashboard'); // Redirect if already logged in
+    }
+  }, [currentUser, router]);
+
+  if (currentUser && !authLoading) {
+    // Return null or a loading indicator while redirecting to prevent rendering the login form briefly
     return null; 
   }
 
@@ -42,7 +48,7 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       toast({ title: "Login Successful!", description: "Redirecting to dashboard..." });
-      router.push('/dashboard');
+      // router.push('/dashboard'); // Handled by useEffect now
     } catch (error: any) {
       const errorMessage = error.message || "Failed to login. Please check your credentials.";
       setFormError(errorMessage);
