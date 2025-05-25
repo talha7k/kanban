@@ -36,6 +36,18 @@ export default function DashboardPage() {
     try {
       const userProjects = await getProjectsForUser(currentUser.uid);
       setProjects(userProjects);
+
+      // If the manage members dialog is open, update its project data
+      if (selectedProjectForMembers) {
+        const updatedSelectedProject = userProjects.find(p => p.id === selectedProjectForMembers.id);
+        if (updatedSelectedProject) {
+          setSelectedProjectForMembers(updatedSelectedProject);
+        } else {
+          // Project might have been deleted or user lost access
+          setIsManageMembersDialogOpen(false);
+          setSelectedProjectForMembers(null);
+        }
+      }
     } catch (error) {
       console.error("Error fetching projects:", error);
       toast({ variant: "destructive", title: "Error", description: "Could not load projects." });
@@ -46,7 +58,8 @@ export default function DashboardPage() {
     try {
       const fetchedUsers = await getAllUserProfiles();
       setAllUsers(fetchedUsers);
-    } catch (error) {
+    } catch (error)
+{
       console.error("Error fetching users:", error);
       toast({ variant: "destructive", title: "Error", description: "Could not load users." });
     } finally {
@@ -58,7 +71,7 @@ export default function DashboardPage() {
     if (currentUser?.uid) {
       fetchDashboardData();
     }
-  }, [currentUser?.uid]); // Removed toast from dependencies as fetchDashboardData uses it internally
+  }, [currentUser?.uid]);
 
   const handleAddProject = async (projectData: NewProjectData) => {
     if (!currentUser?.uid) {
@@ -67,7 +80,8 @@ export default function DashboardPage() {
     }
     try {
       const newProject = await createProjectInDb(projectData, currentUser.uid);
-      setProjects(prevProjects => [...prevProjects, newProject]);
+      // Instead of directly adding to state, re-fetch to get the most consistent data
+      await fetchDashboardData(); 
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
       setIsCreateProjectDialogOpen(false);
     } catch (error) {
@@ -83,6 +97,7 @@ export default function DashboardPage() {
   };
 
   const onMembersUpdated = async () => {
+    // This will re-fetch projects and users, and also update selectedProjectForMembers if dialog is open
     if (currentUser?.uid) {
       await fetchDashboardData(); 
     }
@@ -222,6 +237,8 @@ export default function DashboardPage() {
       )}
       {selectedProjectForMembers && currentUser?.uid === selectedProjectForMembers.ownerId && (
         <ManageProjectMembersDialog
+          // Ensure the dialog gets a key that changes if critical project aspects change, forcing re-initialization
+          key={selectedProjectForMembers.id + (selectedProjectForMembers.memberIds?.join('') || '') + JSON.stringify(selectedProjectForMembers.memberRoles || {})}
           project={selectedProjectForMembers}
           allUsers={allUsers}
           isOpen={isManageMembersDialogOpen}
