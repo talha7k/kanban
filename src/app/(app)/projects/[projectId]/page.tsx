@@ -3,12 +3,13 @@
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import type { Project, UserProfile } from '@/lib/types';
 import { useEffect, useState } from 'react';
-import { getProjectById, getAllUserProfiles } from '@/lib/firebaseService'; 
+import { getProjectById, getAllUserProfiles, updateProjectDetails } from '@/lib/firebaseService'; 
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react'; 
+import { Loader2, Settings } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { EditProjectDialog } from '@/components/project/EditProjectDialog'; // New import
 
 export default function ProjectPage({ params }: { params: { projectId: string } }) {
   const { currentUser } = useAuth();
@@ -19,6 +20,8 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   const [isLoadingProject, setIsLoadingProject] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
+  const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
 
   useEffect(() => {
     if (params.projectId && currentUser) { 
@@ -27,15 +30,21 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         setIsLoadingUsers(true);
         setError(null);
         try {
-          // Fetch project and users in parallel
           const [fetchedProject, fetchedUsers] = await Promise.all([
             getProjectById(params.projectId),
             getAllUserProfiles()
           ]);
 
           if (fetchedProject) {
-            // TODO: Add permission check here - is currentUser.uid part of project.memberIds or ownerId?
-            setProject(fetchedProject);
+            // Permission check (is currentUser member or owner?)
+            const isMember = fetchedProject.memberIds?.includes(currentUser.uid) || fetchedProject.ownerId === currentUser.uid;
+            if (isMember) {
+              setProject(fetchedProject);
+            } else {
+              setError(`You do not have access to project ${params.projectId}.`);
+              setProject(null);
+              toast({ variant: "destructive", title: "Access Denied", description: `You do not have permission to view this project.` });
+            }
           } else {
             setError(`Project with ID ${params.projectId} not found.`);
             setProject(null);
@@ -57,9 +66,29 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     } else if (!currentUser) {
         setIsLoadingProject(false);
         setIsLoadingUsers(false);
-        // User not loaded yet, or not logged in.
     }
   }, [params.projectId, currentUser, toast]);
+
+  const handleEditProjectSubmit = async (data: { name: string; description?: string }) => {
+    if (!project || !currentUser || currentUser.uid !== project.ownerId) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "Only the project owner can edit details."});
+      return;
+    }
+    setIsSubmittingProjectEdit(true);
+    try {
+      const updatedProject = await updateProjectDetails(project.id, data);
+      setProject(updatedProject);
+      toast({ title: "Project Updated", description: `"${updatedProject.name}" has been successfully updated.` });
+      setIsEditProjectDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating project:", error);
+      const errorMessage = error instanceof Error ? error.message : "Could not update project.";
+      toast({ variant: "destructive", title: "Update Failed", description: errorMessage });
+    } finally {
+      setIsSubmittingProjectEdit(false);
+    }
+  };
+
 
   const isLoading = isLoadingProject || isLoadingUsers;
 
@@ -72,7 +101,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     );
   }
 
-  if (error && !project) { // Show error only if project loading failed critically
+  if (error && !project) { 
     return (
       <div className="flex flex-col items-center justify-center h-full text-destructive p-8">
         <h2 className="text-2xl font-semibold mb-2">Error</h2>
@@ -80,6 +109,9 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
           Try Reloading
         </Button>
+         <Link href="/dashboard" passHref>
+            <Button variant="link" className="mt-2">Go to Dashboard</Button>
+        </Link>
       </div>
     );
   }
@@ -96,9 +128,36 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   }
 
   return (
-    <div className="h-full">
-      {/* Pass users list which should now be populated before KanbanBoard renders */}
-      <KanbanBoard project={project} users={users} />
+    <div className="h-full flex flex-col">
+       <div className="p-4 border-b bg-card">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-card-foreground flex items-center">
+            {project.name}
+            {currentUser?.uid === project.ownerId && (
+              <Button variant="ghost" size="icon" onClick={() => setIsEditProjectDialogOpen(true)} className="ml-3" disabled={isSubmittingProjectEdit}>
+                <Settings className="h-5 w-5" />
+                <span className="sr-only">Edit Project Details</span>
+              </Button>
+            )}
+          </h1>
+          <Link href="/dashboard">
+            <Button variant="outline">Back to Dashboard</Button>
+          </Link>
+        </div>
+      </div>
+      <div className="flex-1 min-h-0"> {/* Allows KanbanBoard to take remaining height */}
+        <KanbanBoard project={project} users={users} />
+      </div>
+      {currentUser?.uid === project.ownerId && project && (
+        <EditProjectDialog
+          isOpen={isEditProjectDialogOpen}
+          onOpenChange={setIsEditProjectDialogOpen}
+          project={project}
+          onEditProject={handleEditProjectSubmit}
+          isSubmitting={isSubmittingProjectEdit}
+        />
+      )}
     </div>
   );
 }
+

@@ -10,7 +10,7 @@ interface KanbanColumnProps {
   column: Column;
   tasks: Task[];
   users: UserProfile[];
-  canManageTasks: boolean; // Changed from isOwner
+  canManageTasks: boolean; 
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
@@ -25,7 +25,7 @@ export function KanbanColumn({
   column,
   tasks,
   users,
-  canManageTasks, // Changed from isOwner
+  canManageTasks, 
   onDragStart,
   onDragOver,
   onDrop,
@@ -41,7 +41,7 @@ export function KanbanColumn({
 
   return (
     <div
-      className="flex-shrink-0 w-80 bg-muted/50 p-3 rounded-lg shadow-sm h-full flex flex-col"
+      className="w-full md:w-80 md:flex-shrink-0 bg-muted/50 p-3 rounded-lg shadow-sm h-full flex flex-col"
       onDragOver={(e) => onDragOver(e, column.id)}
       onDrop={(e) => onDrop(e, column.id)}
       aria-labelledby={`column-title-${column.id}`}
@@ -56,7 +56,7 @@ export function KanbanColumn({
             key={task.id}
             task={task}
             users={users}
-            canManageTask={canManageTasks} // Pass down the broader permission
+            canManageTask={canManageTasks}
             onDragStart={onDragStart}
             onEdit={onEditTask}
             onDelete={onDeleteTask}
@@ -82,3 +82,4 @@ export function KanbanColumn({
     </div>
   );
 }
+

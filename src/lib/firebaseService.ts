@@ -15,7 +15,7 @@ import {
   arrayRemove,
   deleteDoc,
   writeBatch,
-  deleteField, // Moved import to the top
+  deleteField,
 } from 'firebase/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth } from './firebase';
@@ -40,7 +40,7 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
         email: email || '',
         avatarUrl: photoURL || `https://placehold.co/40x40.png?text=${(additionalData?.name || displayName || email || 'U').substring(0,1).toUpperCase()}`,
         role: 'staff', // Default global role
-        title: additionalData?.title || 'Team Member',
+        title: additionalData?.title || 'Team Member', // Default title
         createdAt,
       };
       const { id, ...profileToSave } = newUserProfile;
@@ -55,8 +55,8 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
   return {
     id: snapshot.id,
     ...existingData,
-    role: existingData.role || 'staff', // Ensure role defaults if missing
-    title: existingData.title || 'Team Member', // Ensure title defaults if missing
+    role: existingData.role || 'staff',
+    title: existingData.title || 'Team Member',
    } as UserProfile;
 };
 
@@ -96,7 +96,8 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
 };
 
 export const updateUserProfile = async (userId: string, data: { name?: string, title?: string, avatarUrl?: string }): Promise<void> => {
-  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+  const currentUser = auth.currentUser;
+  if (!currentUser || currentUser.uid !== userId) {
     throw new Error("User must be authenticated and can only update their own profile.");
   }
   const userRef = doc(db, `users/${userId}`);
@@ -121,7 +122,6 @@ export const updateUserProfile = async (userId: string, data: { name?: string, t
 
 // Project Functions
 export const createProject = async (projectData: NewProjectData, ownerId: string): Promise<Project> => {
-  if (!ownerId) throw new Error("Owner ID is required to create a project.");
   const user = auth.currentUser;
   if (!user || user.uid !== ownerId) {
     throw new Error("User must be authenticated and match ownerId to create projects.");
@@ -139,7 +139,7 @@ export const createProject = async (projectData: NewProjectData, ownerId: string
       columns: defaultColumns,
       tasks: [],
       memberIds: [ownerId],
-      memberRoles: { [ownerId]: 'manager' }, // Owner is manager of their project
+      memberRoles: { [ownerId]: 'manager' },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -150,6 +150,38 @@ export const createProject = async (projectData: NewProjectData, ownerId: string
     throw error;
   }
 };
+
+export const updateProjectDetails = async (projectId: string, data: { name?: string, description?: string }): Promise<Project> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("User must be authenticated to update project details.");
+  }
+  const projectRef = doc(db, 'projects', projectId);
+  const projectSnap = await getDoc(projectRef);
+
+  if (!projectSnap.exists()) {
+    throw new Error("Project not found.");
+  }
+  const projectData = projectSnap.data() as Project;
+  if (projectData.ownerId !== currentUser.uid) {
+    throw new Error("Only the project owner can update project details.");
+  }
+
+  const updatePayload: Partial<Pick<Project, 'name' | 'description' | 'updatedAt'>> = {};
+  if (data.name !== undefined) updatePayload.name = data.name;
+  if (data.description !== undefined) updatePayload.description = data.description;
+
+  if (Object.keys(updatePayload).length === 0) {
+    return { id: projectId, ...projectData }; // No changes
+  }
+
+  updatePayload.updatedAt = new Date().toISOString();
+
+  await updateDoc(projectRef, updatePayload);
+
+  return { id: projectId, ...projectData, ...updatePayload } as Project;
+};
+
 
 export const getProjectById = async (projectId: string): Promise<Project | null> => {
   try {
@@ -213,7 +245,6 @@ export const addUserToProject = async (projectId: string, userId: string): Promi
         memberIds: arrayUnion(userId) as unknown as string[],
         updatedAt: new Date().toISOString(),
     };
-    // Add to memberRoles with default 'member' role
     updates[`memberRoles.${userId}`] = 'member';
 
 
@@ -310,11 +341,11 @@ export const addTaskToProject = async (projectId: string, taskData: NewTaskData,
 
     const newTask: Task = {
       title: taskData.title,
-      description: taskData.description === undefined ? null : taskData.description,
+      description: taskData.description === undefined || taskData.description === '' ? null : taskData.description,
       priority: taskData.priority,
       assigneeUids: taskData.assigneeUids === undefined ? [] : taskData.assigneeUids,
       reporterId: taskData.reporterId === undefined ? null : taskData.reporterId,
-      dueDate: taskData.dueDate === undefined ? null : taskData.dueDate,
+      dueDate: taskData.dueDate === undefined  || taskData.dueDate === '' ? null : taskData.dueDate,
       tags: taskData.tags === undefined ? [] : taskData.tags,
       dependentTaskTitles: taskData.dependentTaskTitles === undefined ? [] : taskData.dependentTaskTitles,
       id: newTaskId,
@@ -359,15 +390,19 @@ export const updateTaskInProject = async (projectId: string, taskId: string, tas
             const typedKey = key as keyof typeof taskUpdateData;
             // @ts-ignore
             const value = taskUpdateData[typedKey];
-            // @ts-ignore
+            // @ts-ignore - Ensure undefined becomes null for Firestore compatibility
             updatePayload[typedKey] = value === undefined ? null : value;
         }
     }
     
-    // Ensure array fields are not accidentally set to null if not provided in update
-    if (taskUpdateData.assigneeUids === undefined) updatePayload.assigneeUids = existingTask.assigneeUids ?? []; else updatePayload.assigneeUids = taskUpdateData.assigneeUids ?? [];
-    if (taskUpdateData.tags === undefined) updatePayload.tags = existingTask.tags ?? []; else updatePayload.tags = taskUpdateData.tags ?? [];
-    if (taskUpdateData.dependentTaskTitles === undefined) updatePayload.dependentTaskTitles = existingTask.dependentTaskTitles ?? []; else updatePayload.dependentTaskTitles = taskUpdateData.dependentTaskTitles ?? [];
+    // Explicitly handle array fields to ensure they are empty arrays if undefined, not null
+    updatePayload.assigneeUids = taskUpdateData.assigneeUids ?? existingTask.assigneeUids ?? [];
+    updatePayload.tags = taskUpdateData.tags ?? existingTask.tags ?? [];
+    updatePayload.dependentTaskTitles = taskUpdateData.dependentTaskTitles ?? existingTask.dependentTaskTitles ?? [];
+    
+    // Ensure optional string fields that might be empty string are set to null instead
+    if (updatePayload.description === '') updatePayload.description = null;
+    if (updatePayload.dueDate === '') updatePayload.dueDate = null;
 
 
     const updatedTask: Task = {
@@ -501,3 +536,4 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
   }
   return null;
 };
+

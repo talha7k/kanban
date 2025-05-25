@@ -58,7 +58,7 @@ export default function DashboardPage() {
     if (currentUser?.uid) {
       fetchDashboardData();
     }
-  }, [currentUser?.uid, toast]);
+  }, [currentUser?.uid]); // Removed toast from dependencies as fetchDashboardData uses it internally
 
   const handleAddProject = async (projectData: NewProjectData) => {
     if (!currentUser?.uid) {
@@ -84,7 +84,7 @@ export default function DashboardPage() {
 
   const onMembersUpdated = async () => {
     if (currentUser?.uid) {
-      await fetchDashboardData(); // Refetch projects and users after members are updated
+      await fetchDashboardData(); 
     }
   }
 
@@ -99,9 +99,9 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Projects Section */}
-        <Card className="md:col-span-2 shadow-lg">
+        <Card className="lg:col-span-2 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-2xl">
               <FolderKanban className="mr-3 h-7 w-7 text-primary" />
@@ -116,7 +116,7 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-auto max-h-[300px] md:max-h-[450px] pr-4">
                 <div className="space-y-4">
                   {projects.map((project) => (
                     <Card key={project.id} className="hover:shadow-md transition-shadow">
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                 <div className="flex items-center space-x-3 p-2"><Skeleton className="h-9 w-9 rounded-full" /><Skeleton className="h-4 w-28" /></div>
               </div>
             ) : allUsers.length > 0 ? (
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-auto max-h-[300px] md:max-h-[450px] pr-4">
                 <ul className="space-y-3">
                   {allUsers.map((user) => (
                     <li key={user.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50">
@@ -235,3 +235,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

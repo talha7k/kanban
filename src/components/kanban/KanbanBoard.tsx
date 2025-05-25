@@ -27,7 +27,6 @@ import {
   deleteTaskFromProject,
   moveTaskInProject,
   addCommentToTask,
-  getProjectById // For re-fetching project data
 } from '@/lib/firebaseService';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -58,10 +57,12 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   }, [initialProject]);
 
   const isOwner = useMemo(() => currentUser?.uid === projectData.ownerId, [currentUser, projectData.ownerId]);
+  
   const currentUserProjectRole = useMemo((): UserProjectRole | null => {
     if (!currentUser || !projectData.memberRoles) return null;
+    if (isOwner) return 'manager'; // Owner always has manager equivalent permissions for their project
     return projectData.memberRoles[currentUser.uid] || null;
-  }, [currentUser, projectData.memberRoles]);
+  }, [currentUser, projectData.memberRoles, isOwner]);
 
   const canManageTasks = useMemo(() => isOwner || currentUserProjectRole === 'manager', [isOwner, currentUserProjectRole]);
 
@@ -92,14 +93,14 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       setIsSubmitting(false);
       return;
     }
-    if (!userProfile) {
-        toast({ variant: "default", title: "User Profile Warning", description: "User profile not fully loaded. Task will be created without a reporter if you proceed." });
-        // Continue, reporterId is optional
+     if (!userProfile && !isOwner) { // Owner might not need full profile to add tasks if reporter is self
+        toast({ variant: "default", title: "User Profile Warning", description: "User profile not fully loaded. Task reporter might not be set if you proceed." });
     }
+
 
     const newTaskPayload: NewTaskData = {
       ...taskData,
-      reporterId: userProfile ? userProfile.id : undefined,
+      reporterId: userProfile?.id || (isOwner ? currentUser.uid : undefined),
     };
 
     console.log("Attempting to add task with payload:", newTaskPayload);
@@ -114,7 +115,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         };
       });
       toast({ title: "Task Added", description: `"${newTask.title}" has been added.` });
-      setIsAddTaskDialogOpen(false); // Close dialog on success
+      setIsAddTaskDialogOpen(false); 
     } catch (error) {
       console.error("Error adding task:", error, "Payload:", newTaskPayload);
       toast({ variant: "destructive", title: "Error Adding Task", description: error instanceof Error ? error.message : "Could not add task." });
@@ -162,7 +163,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const openDeleteConfirm = (taskId: TaskId) => {
-    if (!canManageTasks) {
+    if (!canManageTasks) { // Use canManageTasks which includes owner and manager roles
       toast({ variant: "destructive", title: "Permission Denied", description: "You do not have permission to delete tasks." });
       return;
     }
@@ -173,7 +174,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const handleDeleteTask = async () => {
     if (!taskToDeleteId) return;
 
-    if (!canManageTasks) {
+    if (!canManageTasks) { 
       toast({ variant: "destructive", title: "Permission Denied", description: "You do not have permission to delete tasks." });
       setShowDeleteConfirm(false);
       setTaskToDeleteId(null);
@@ -332,9 +333,10 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
 
   return (
-    <div className="container mx-auto py-6 h-[calc(100vh-var(--header-height,56px)-2rem)] flex flex-col">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-foreground">{projectData.name}</h1>
+    <div className="container mx-auto py-6 h-full flex flex-col">
+      <div className="flex justify-between items-center mb-6 px-1">
+        {/* Project name and edit button are now in ProjectPage.tsx header */}
+        <div></div> {/* Placeholder to keep Add New Task button to the right */}
         <Button
             onClick={() => {
                 if (projectData.columns.length === 0) {
@@ -351,14 +353,14 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           Add New Task
         </Button>
       </div>
-      <div className="flex-1 flex space-x-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-primary/50 scrollbar-track-transparent">
+      <div className="flex-1 grid grid-cols-1 md:flex md:space-x-4 gap-4 md:gap-0 md:overflow-x-auto pb-4 md:scrollbar-thin md:scrollbar-thumb-primary/50 md:scrollbar-track-transparent">
         {projectData.columns.sort((a,b) => a.order - b.order).map(column => (
           <KanbanColumn
             key={column.id}
             column={column}
             tasks={projectData.tasks}
             users={users}
-            canManageTasks={canManageTasks} // Pass down the broader permission
+            canManageTasks={canManageTasks}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
@@ -370,8 +372,8 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           />
         ))}
          {projectData.columns.length === 0 && (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-muted-foreground">This project has no columns. Please configure columns first.</p>
+          <div className="flex-1 flex items-center justify-center text-center p-4">
+            <p className="text-muted-foreground">This project has no columns yet. <br/>The project owner can configure columns in project settings (feature coming soon).</p>
           </div>
         )}
       </div>
@@ -439,3 +441,4 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     </div>
   );
 }
+
