@@ -91,8 +91,8 @@ export default function DashboardPage() {
       setProjects(prevProjects => [newProject, ...prevProjects].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setIsCreateProjectDialogOpen(false);
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
-      // Optionally, re-fetch to ensure full consistency, though optimistic update handles immediate UI
-      // await fetchDashboardData();
+      // No need to call fetchDashboardData() here due to optimistic update,
+      // but if there were complex server-side changes, you might.
     } catch (error) {
       console.error("Error creating project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not create project.";
@@ -195,22 +195,24 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4">
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-2"> {/* Reduced pr slightly */}
                 <div className="space-y-4">
                   {projects.map((project) => (
                     <Card key={project.id} className="bg-primary/5 hover:shadow-lg transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start">
-                            <CardTitle className="text-lg min-w-0 break-words mr-2">{project.name}</CardTitle>
+                      <CardHeader className="px-4 py-3 sm:px-4 sm:py-4 pb-3"> {/* Responsive padding */}
+                        <div className="flex items-center w-full"> {/* Use items-center for vertical alignment if title wraps */}
+                            <CardTitle className="text-lg min-w-0 break-words mr-2 flex-1"> {/* flex-1 makes title greedy */}
+                                {project.name}
+                            </CardTitle>
                             {currentUser?.uid === project.ownerId && (
-                                <Badge variant="outline" className="ml-auto border-accent text-accent flex-shrink-0">
+                                <Badge variant="outline" className="ml-auto border-accent text-accent flex-shrink-0 whitespace-nowrap">
                                     <Crown className="mr-1.5 h-3.5 w-3.5" /> Owner
                                 </Badge>
                             )}
                         </div>
-                        <CardDescription className="line-clamp-2 min-h-[40px] break-words">{project.description || 'No description available.'}</CardDescription>
+                        <CardDescription className="line-clamp-2 min-h-[40px] break-words pt-1">{project.description || 'No description available.'}</CardDescription>
                       </CardHeader>
-                      <CardFooter className="flex flex-col items-start space-y-3">
+                      <CardFooter className="flex flex-col items-start space-y-3 px-4 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-2"> {/* Responsive padding */}
                         <div className="flex items-center space-x-2 mb-1">
                             {(project.memberIds || []).slice(0, 3).map(memberId => {
                                 const member = allUsers.find(u => u.id === memberId);
@@ -273,7 +275,7 @@ export default function DashboardPage() {
                 <div className="flex items-center space-x-3 p-2"><Skeleton className="h-9 w-9 rounded-full" /><Skeleton className="h-4 w-28" /></div>
               </div>
             ) : allUsers.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-2 overflow-y-auto"> {/* Reduced pr slightly */}
                 <ul className="space-y-3">
                   {allUsers.map((user) => (
                     <li key={user.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50">
@@ -363,3 +365,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
