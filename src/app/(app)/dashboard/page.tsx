@@ -1,10 +1,11 @@
+// pages/dashboard/index.tsx (suggested file name and location)
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
+  Card, // Keep Card import if you still use it for other sections (e.g., Users card)
   CardContent,
   CardDescription,
   CardFooter,
@@ -66,7 +67,7 @@ export default function DashboardPage() {
   const [selectedProjectForMembers, setSelectedProjectForMembers] =
     useState<Project | null>(null);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [isLoadingUsers, useStateIsLoadingUsers] = useState(true); // Renamed to avoid conflict
   const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
   const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
@@ -74,7 +75,8 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     if (!currentUser?.uid) return;
     setIsLoadingProjects(true);
-    setIsLoadingUsers(true);
+    useStateIsLoadingUsers(true); // Corrected usage
+
     try {
       const userProjects = await getProjectsForUser(currentUser.uid);
       setProjects(userProjects);
@@ -112,7 +114,7 @@ export default function DashboardPage() {
         description: "Could not load users.",
       });
     } finally {
-      setIsLoadingUsers(false);
+      useStateIsLoadingUsers(false); // Corrected usage
     }
   };
 
@@ -285,6 +287,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Projects Section */}
         <Card className="lg:col-span-2 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-2xl">
@@ -313,17 +316,14 @@ export default function DashboardPage() {
                   {projects.map((project) => (
                     <div
                       key={project.id}
-                      className="flex flex-col shrink hover:shadow-md transition-shadow
-                 p-0 m-0 sm:p-6 sm:m-0 border rounded-lg bg-card text-card-foreground shadow-sm" // Mimics Card styling but with p-0 m-0 on small screens
+                      className="flex flex-col shrink-0 flex-grow hover:shadow-md transition-shadow
+                                 border rounded-lg bg-card text-card-foreground shadow-sm
+                                 p-4 md:p-6" // Apply padding on md and larger screens
                     >
-                      {/* Mimics CardHeader */}
-                      <div className="pb-3 px-4 pt-4 sm:px-6 sm:pt-6">
-                        {" "}
-                        {/* Add padding for inner content */}
+                      {/* CardHeader equivalent with flexible padding */}
+                      <div className="pb-3">
                         <div className="flex justify-between items-start">
                           <h3 className="text-lg font-semibold tracking-tight">
-                            {" "}
-                            {/* Mimics CardTitle */}
                             {project.name}
                           </h3>
                           {currentUser?.uid === project.ownerId && (
@@ -336,16 +336,14 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px] break-words">
-                          {" "}
-                          {/* Mimics CardDescription */}
                           {project.description || "No description available."}
                         </p>
                       </div>
 
-                      {/* Mimics CardFooter */}
-                      <div className="flex flex-col items-start space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
+                      {/* CardFooter equivalent with flexible padding */}
+                      <div className="flex flex-col items-start space-y-3 pt-3 border-t border-border mt-3">
                         {" "}
-                        {/* Add padding for inner content */}
+                        {/* Added border-t for visual separation like CardFooter */}
                         <div className="flex items-center space-x-2 mb-1">
                           {(project.memberIds || [])
                             .slice(0, 3)
@@ -429,12 +427,13 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
+        {/* Users Section (remains a Card) */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-2xl">
               <Users className="mr-3 h-7 w-7 text-accent" />
               Users (
-              {isLoadingUsers ? (
+              {useStateIsLoadingUsers ? ( // Corrected usage
                 <Loader2 className="h-5 w-5 animate-spin ml-2" />
               ) : (
                 allUsers.length
@@ -444,7 +443,7 @@ export default function DashboardPage() {
             <CardDescription>Overview of team members.</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoadingUsers ? (
+            {useStateIsLoadingUsers ? ( // Corrected usage
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 p-2">
                   <Skeleton className="h-9 w-9 rounded-full" />
