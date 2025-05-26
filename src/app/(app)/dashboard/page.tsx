@@ -12,7 +12,7 @@ import { PlusCircle, Users, FolderKanban, Loader2, Briefcase, Settings2,Eye, Cro
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
-import { getProjectsForUser, getAllUserProfiles, createProject as createProjectInDb, updateProjectDetails, deleteProject as deleteProjectFromDb } from '@/lib/firebaseService';
+import { getProjectsForUser, getAllUserProfiles, createProject as createProjectInDb, updateProjectDetails as updateProjectDetailsInDb, deleteProject as deleteProjectFromDb } from '@/lib/firebaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -44,14 +44,13 @@ export default function DashboardPage() {
     setIsLoadingUsers(true); 
     try {
       const userProjects = await getProjectsForUser(currentUser.uid);
-      setProjects(userProjects);
+      setProjects(userProjects.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
 
       if (selectedProjectForMembers) {
         const updatedSelectedProject = userProjects.find(p => p.id === selectedProjectForMembers.id);
         if (updatedSelectedProject) {
           setSelectedProjectForMembers(updatedSelectedProject);
         } else {
-          // If the selected project for members is no longer in the list (e.g., deleted), close the dialog.
           setIsManageMembersDialogOpen(false);
           setSelectedProjectForMembers(null);
         }
@@ -87,16 +86,9 @@ export default function DashboardPage() {
     }
     try {
       const newProject = await createProjectInDb(projectData, currentUser.uid);
-      
-      // Optimistic update
       setProjects(prevProjects => [newProject, ...prevProjects].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setIsCreateProjectDialogOpen(false); 
-      
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
-      
-      // Fetch in background for consistency, but UI updated optimistically
-      // await fetchDashboardData(); 
-      
     } catch (error) {
       console.error("Error creating project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not create project.";
@@ -111,7 +103,7 @@ export default function DashboardPage() {
     }
     setIsSubmittingProjectEdit(true);
     try {
-      await updateProjectDetails(projectToEdit.id, data);
+      await updateProjectDetailsInDb(projectToEdit.id, data);
       toast({ title: "Project Updated", description: `"${data.name}" has been successfully updated.` });
       setIsEditProjectDialogOpen(false);
       setProjectToEdit(null);
@@ -167,8 +159,6 @@ export default function DashboardPage() {
   };
 
   const onMembersUpdated = async () => {
-    // This will re-fetch projects, which includes updated memberIds and memberRoles
-    // The ManageProjectMembersDialog's key prop will ensure it re-renders if selectedProjectForMembers changes.
     if (currentUser?.uid) {
       await fetchDashboardData(); 
     }
@@ -201,15 +191,15 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-auto">
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4">
                 <div className="space-y-4">
                   {projects.map((project) => (
                     <Card key={project.id} className="bg-primary/5 hover:shadow-lg transition-shadow">
                       <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start">
-                            <CardTitle className="text-lg flex-1 min-w-0 break-words">{project.name}</CardTitle>
+                        <div className="flex items-start"> {/* Changed from justify-between */}
+                            <CardTitle className="text-lg min-w-0 break-words mr-2">{project.name}</CardTitle> {/* Removed flex-1, added mr-2 */}
                             {currentUser?.uid === project.ownerId && (
-                                <Badge variant="outline" className="ml-2 border-accent text-accent flex-shrink-0">
+                                <Badge variant="outline" className="ml-auto border-accent text-accent flex-shrink-0"> {/* Added ml-auto */}
                                     <Crown className="mr-1.5 h-3.5 w-3.5" /> Owner
                                 </Badge>
                             )}
