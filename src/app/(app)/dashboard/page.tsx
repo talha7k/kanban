@@ -79,14 +79,27 @@ export default function DashboardPage() {
     }
     try {
       const newProject = await createProjectInDb(projectData, currentUser.uid);
-      // Re-fetch to get the most consistent data including the new project
-      await fetchDashboardData(); 
+      
+      // Optimistic UI update
+      setProjects(prevProjects => {
+        // Avoid duplicates if fetchDashboardData runs very fast or was already triggered
+        if (prevProjects.find(p => p.id === newProject.id)) {
+          return prevProjects.map(p => p.id === newProject.id ? newProject : p);
+        }
+        return [...prevProjects, newProject];
+      });
+      
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
-      setIsCreateProjectDialogOpen(false);
+      setIsCreateProjectDialogOpen(false); // Close dialog on success
+
+      // Re-fetch in the background for eventual consistency
+      await fetchDashboardData(); 
+      
     } catch (error) {
       console.error("Error creating project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not create project.";
       toast({ variant: "destructive", title: "Creation Failed", description: errorMessage });
+      // Do not close dialog on error, user might want to retry
     }
   };
 
