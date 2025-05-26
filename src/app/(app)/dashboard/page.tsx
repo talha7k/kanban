@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     if (!currentUser?.uid) return;
     setIsLoadingProjects(true);
-    setIsLoadingUsers(true); 
+    setIsLoadingUsers(true);
     try {
       const userProjects = await getProjectsForUser(currentUser.uid);
       setProjects(userProjects.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
@@ -51,6 +51,7 @@ export default function DashboardPage() {
         if (updatedSelectedProject) {
           setSelectedProjectForMembers(updatedSelectedProject);
         } else {
+          // Project was deleted or user lost access
           setIsManageMembersDialogOpen(false);
           setSelectedProjectForMembers(null);
         }
@@ -86,9 +87,12 @@ export default function DashboardPage() {
     }
     try {
       const newProject = await createProjectInDb(projectData, currentUser.uid);
+      // Optimistic update
       setProjects(prevProjects => [newProject, ...prevProjects].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setIsCreateProjectDialogOpen(false); 
+      setIsCreateProjectDialogOpen(false);
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
+      // Optionally, re-fetch to ensure full consistency, though optimistic update handles immediate UI
+      // await fetchDashboardData();
     } catch (error) {
       console.error("Error creating project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not create project.";
@@ -107,7 +111,7 @@ export default function DashboardPage() {
       toast({ title: "Project Updated", description: `"${data.name}" has been successfully updated.` });
       setIsEditProjectDialogOpen(false);
       setProjectToEdit(null);
-      await fetchDashboardData(); 
+      await fetchDashboardData();
     } catch (error) {
       console.error("Error updating project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not update project.";
@@ -121,7 +125,7 @@ export default function DashboardPage() {
     setProjectToEdit(project);
     setIsEditProjectDialogOpen(true);
   };
-  
+
   const openDeleteProjectDialog = (project: Project) => {
     setProjectToDelete(project);
   };
@@ -137,7 +141,7 @@ export default function DashboardPage() {
       await deleteProjectFromDb(projectToDelete.id);
       toast({ title: "Project Deleted", description: `"${projectToDelete.name}" has been successfully deleted.` });
       setProjectToDelete(null);
-      await fetchDashboardData(); 
+      await fetchDashboardData();
     } catch (error) {
       console.error("Error deleting project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not delete project.";
@@ -160,7 +164,7 @@ export default function DashboardPage() {
 
   const onMembersUpdated = async () => {
     if (currentUser?.uid) {
-      await fetchDashboardData(); 
+      await fetchDashboardData();
     }
   }
 
@@ -196,10 +200,10 @@ export default function DashboardPage() {
                   {projects.map((project) => (
                     <Card key={project.id} className="bg-primary/5 hover:shadow-lg transition-shadow">
                       <CardHeader className="pb-3">
-                        <div className="flex items-start"> {/* Changed from justify-between */}
-                            <CardTitle className="text-lg min-w-0 break-words mr-2">{project.name}</CardTitle> {/* Removed flex-1, added mr-2 */}
+                        <div className="flex items-start">
+                            <CardTitle className="text-lg min-w-0 break-words mr-2">{project.name}</CardTitle>
                             {currentUser?.uid === project.ownerId && (
-                                <Badge variant="outline" className="ml-auto border-accent text-accent flex-shrink-0"> {/* Added ml-auto */}
+                                <Badge variant="outline" className="ml-auto border-accent text-accent flex-shrink-0">
                                     <Crown className="mr-1.5 h-3.5 w-3.5" /> Owner
                                 </Badge>
                             )}
@@ -224,20 +228,20 @@ export default function DashboardPage() {
                             )}
                             <span className="text-xs text-muted-foreground">{(project.memberIds?.length || 0)} Member(s)</span>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex w-full flex-col sm:flex-row sm:flex-wrap gap-2">
                             <Button asChild variant="outline" size="sm">
                                 <Link href={`/projects/${project.id}`}><Eye className="mr-1.5 h-3.5 w-3.5" />View Board</Link>
                             </Button>
                             {currentUser?.uid === project.ownerId && (
                               <>
                                 <Button variant="outline" size="sm" onClick={() => openEditProjectDialog(project)}>
-                                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit 
+                                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
                                 </Button>
                                 <Button variant="outline" size="sm" onClick={() => openManageMembersDialog(project)}>
-                                    <Settings2 className="mr-1.5 h-3.5 w-3.5" />  Members
+                                    <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Members
                                 </Button>
                                 <Button variant="destructive" size="sm" onClick={() => openDeleteProjectDialog(project)}>
-                                    <Trash2 className="h-3.5 w-3.5" /> 
+                                    <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </>
                             )}
@@ -359,5 +363,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
