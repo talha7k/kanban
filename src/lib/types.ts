@@ -38,14 +38,14 @@ export interface NewProjectData {
 export interface Task {
   id: TaskId;
   title: string;
-  description?: string;
+  description?: string | null; // Allow null for Firestore
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'NONE';
   projectId: ProjectId; // Ensures task is tied to a project context
   columnId: ColumnId;
   order: number; // Order within the column
   assigneeUids?: UserId[];
-  reporterId?: UserId; // Optional: User who reported/created task
-  dueDate?: string; // YYYY-MM-DD
+  reporterId?: UserId | null; // Allow null for Firestore
+  dueDate?: string | null; // YYYY-MM-DD, allow null for Firestore
   tags?: string[];
   comments?: Comment[];
   dependentTaskTitles?: string[]; // For AI priority suggestion
@@ -54,7 +54,7 @@ export interface Task {
 }
 
 // Used for creating a task, some fields are auto-generated
-export type NewTaskData = Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt' | 'comments' | 'order'>;
+export type NewTaskData = Omit<Task, 'id' | 'projectId' | 'columnId' | 'createdAt' | 'updatedAt' | 'comments' | 'order'>;
 
 
 export interface Column {

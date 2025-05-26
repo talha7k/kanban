@@ -429,7 +429,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             </Button>
         )}
       </div>
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:flex lg:gap-4 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">
+      <div className="flex-1 grid grid-cols-1 lg:flex lg:gap-4 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">
         {projectData.columns.sort((a,b) => a.order - b.order).map(column => (
           <KanbanColumn
             key={column.id}
