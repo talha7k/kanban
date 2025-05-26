@@ -353,7 +353,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           Add New Task
         </Button>
       </div>
-      <div className="flex-1 grid grid-cols-1 md:flex md:space-x-4 gap-4 md:gap-0 md:overflow-x-auto pb-4 md:scrollbar-thin md:scrollbar-thumb-primary/50 md:scrollbar-track-transparent">
+      <div className="flex-1 justify-between grid grid-cols-1 lg:flex lg:space-x-4 gap-4 lg:gap-0 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">
         {projectData.columns.sort((a,b) => a.order - b.order).map(column => (
           <KanbanColumn
             key={column.id}

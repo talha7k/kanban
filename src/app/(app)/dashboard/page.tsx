@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import type { NewProjectData, Project, UserProfile } from '@/lib/types';
 import { CreateProjectDialog } from '@/components/dashboard/CreateProjectDialog';
 import { ManageProjectMembersDialog } from '@/components/dashboard/ManageProjectMembersDialog';
-import { PlusCircle, Users, FolderKanban, Loader2, Briefcase, Settings2, Crown, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, Users, FolderKanban, Loader2, Briefcase, Settings2,Eye, Crown, Pencil, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
@@ -185,7 +185,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3  gap-6">
         {/* Projects Section */}
         <Card className="lg:col-span-2 shadow-lg">
           <CardHeader>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
+              <ScrollArea className="h-auto  lg:max-h-[500px] pr-4 overflow-y-auto">
                 <div className="space-y-4">
                   {projects.map((project) => (
                     <Card key={project.id} className="hover:shadow-md transition-shadow">
@@ -237,18 +237,18 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                             <Button asChild variant="outline" size="sm">
-                                <Link href={`/projects/${project.id}`}>View Board</Link>
+                                <Link href={`/projects/${project.id}`}><Eye className="mr-1.5 h-3.5 w-3.5" />View Board</Link>
                             </Button>
                             {currentUser?.uid === project.ownerId && (
                               <>
                                 <Button variant="outline" size="sm" onClick={() => openEditProjectDialog(project)}>
-                                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit Details
+                                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit 
                                 </Button>
                                 <Button variant="outline" size="sm" onClick={() => openManageMembersDialog(project)}>
-                                    <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Members
+                                    <Settings2 className="mr-1.5 h-3.5 w-3.5" />  Members
                                 </Button>
-                                <Button variant="destructiveOutline" size="sm" onClick={() => openDeleteProjectDialog(project)}>
-                                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete Project
+                                <Button variant="destructive" size="sm" onClick={() => openDeleteProjectDialog(project)}>
+                                    <Trash2 className="h-3.5 w-3.5" /> 
                                 </Button>
                               </>
                             )}
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                 <div className="flex items-center space-x-3 p-2"><Skeleton className="h-9 w-9 rounded-full" /><Skeleton className="h-4 w-28" /></div>
               </div>
             ) : allUsers.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4">
+              <ScrollArea className="h-auto max-h-[500px] lg:max-h-[500px] pr-4 overflow-y-auto">
                 <ul className="space-y-3">
                   {allUsers.map((user) => (
                     <li key={user.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50">

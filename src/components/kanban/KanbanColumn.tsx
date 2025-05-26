@@ -41,7 +41,7 @@ export function KanbanColumn({
 
   return (
     <div
-      className="w-full md:w-80 md:flex-shrink-0 bg-muted/50 p-3 rounded-lg shadow-sm h-full flex flex-col"
+      className="w-full lg:w-80 lg:flex-shrink-0 bg-muted/50 p-3 rounded-lg shadow-sm h-full flex flex-col"
       onDragOver={(e) => onDragOver(e, column.id)}
       onDrop={(e) => onDrop(e, column.id)}
       aria-labelledby={`column-title-${column.id}`}

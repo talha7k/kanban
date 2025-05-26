@@ -131,7 +131,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     <div className="h-full flex flex-col">
        <div className="p-4 border-b bg-card">
         <div className="container mx-auto">
-            <div className="flex justify-between items-start sm:items-center flex-col sm:flex-row">
+            <div className="flex justify-between items-center md:items-center flex-col md:flex-row">
                 <div className="flex-1 mb-2 sm:mb-0">
                     <div className="flex items-center">
                         <h1 className="text-2xl font-bold text-card-foreground flex items-center">
