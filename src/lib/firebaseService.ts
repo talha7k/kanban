@@ -151,7 +151,7 @@ export const createProject = async (projectData: NewProjectData, ownerId: string
   }
 };
 
-export const updateProjectDetails = async (projectId: string, data: { name?: string, description?: string }): Promise<Project> => {
+export const updateProjectDetails = async (projectId: string, data: { name?: string; description?: string }): Promise<Project> => {
   const currentUser = auth.currentUser;
   if (!currentUser) {
     throw new Error("User must be authenticated to update project details.");
@@ -180,6 +180,32 @@ export const updateProjectDetails = async (projectId: string, data: { name?: str
   await updateDoc(projectRef, updatePayload);
 
   return { id: projectId, ...projectData, ...updatePayload } as Project;
+};
+
+export const deleteProject = async (projectId: string): Promise<void> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("User must be authenticated to delete projects.");
+  }
+
+  const projectRef = doc(db, 'projects', projectId);
+  const projectSnap = await getDoc(projectRef);
+
+  if (!projectSnap.exists()) {
+    throw new Error("Project not found.");
+  }
+
+  const projectData = projectSnap.data() as Project;
+  if (projectData.ownerId !== currentUser.uid) {
+    throw new Error("Only the project owner can delete the project.");
+  }
+
+  try {
+    await deleteDoc(projectRef);
+  } catch (error) {
+    console.error(`Error deleting project ${projectId}:`, error);
+    throw error;
+  }
 };
 
 

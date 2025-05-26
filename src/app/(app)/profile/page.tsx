@@ -23,7 +23,7 @@ const profileFormSchema = z.object({
 type ProfileFormData = z.infer<typeof profileFormSchema>;
 
 export default function ProfilePage() {
-  const { currentUser, userProfile, loading: authLoading } = useAuth();
+  const { currentUser, userProfile, loading: authLoading, refreshUserProfile } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,8 +56,7 @@ export default function ProfilePage() {
         title: data.title || '', // Send empty string if undefined
       });
       toast({ title: "Profile Updated!", description: "Your profile has been successfully updated." });
-      // Auth context will eventually pick up the changes if it re-fetches userProfile or listens to Firestore.
-      // For immediate UI update of userProfile in context, a more complex state management or refetch is needed.
+      await refreshUserProfile(); // Refresh context to update UI immediately
     } catch (error) {
       console.error("Error updating profile:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not update profile.";

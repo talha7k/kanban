@@ -8,14 +8,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import type { NewProjectData, Project, UserProfile } from '@/lib/types';
 import { CreateProjectDialog } from '@/components/dashboard/CreateProjectDialog';
 import { ManageProjectMembersDialog } from '@/components/dashboard/ManageProjectMembersDialog';
-import { PlusCircle, Users, FolderKanban, Loader2, Briefcase, Settings2, Crown } from 'lucide-react';
+import { PlusCircle, Users, FolderKanban, Loader2, Briefcase, Settings2, Crown, Pencil, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
-import { getProjectsForUser, getAllUserProfiles, createProject as createProjectInDb } from '@/lib/firebaseService';
+import { getProjectsForUser, getAllUserProfiles, createProject as createProjectInDb, updateProjectDetails, deleteProject as deleteProjectFromDb } from '@/lib/firebaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { EditProjectDialog } from '@/components/project/EditProjectDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 export default function DashboardPage() {
   const { currentUser, userProfile } = useAuth();
@@ -25,25 +28,29 @@ export default function DashboardPage() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
   const [isManageMembersDialogOpen, setIsManageMembersDialogOpen] = useState(false);
+  const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [selectedProjectForMembers, setSelectedProjectForMembers] = useState<Project | null>(null);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+
 
   const fetchDashboardData = async () => {
     if (!currentUser?.uid) return;
     setIsLoadingProjects(true);
-    setIsLoadingUsers(true);
+    setIsLoadingUsers(true); // Ensure we reset loading state for users too
     try {
       const userProjects = await getProjectsForUser(currentUser.uid);
       setProjects(userProjects);
 
-      // If the manage members dialog is open, update its project data
       if (selectedProjectForMembers) {
         const updatedSelectedProject = userProjects.find(p => p.id === selectedProjectForMembers.id);
         if (updatedSelectedProject) {
           setSelectedProjectForMembers(updatedSelectedProject);
         } else {
-          // Project might have been deleted or user lost access
           setIsManageMembersDialogOpen(false);
           setSelectedProjectForMembers(null);
         }
@@ -80,9 +87,7 @@ export default function DashboardPage() {
     try {
       const newProject = await createProjectInDb(projectData, currentUser.uid);
       
-      // Optimistic UI update
       setProjects(prevProjects => {
-        // Avoid duplicates if fetchDashboardData runs very fast or was already triggered
         if (prevProjects.find(p => p.id === newProject.id)) {
           return prevProjects.map(p => p.id === newProject.id ? newProject : p);
         }
@@ -90,18 +95,68 @@ export default function DashboardPage() {
       });
       
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
-      setIsCreateProjectDialogOpen(false); // Close dialog on success
-
-      // Re-fetch in the background for eventual consistency
-      await fetchDashboardData(); 
+      setIsCreateProjectDialogOpen(false);
+      
+      await fetchDashboardData(); // Ensure consistency
       
     } catch (error) {
       console.error("Error creating project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not create project.";
       toast({ variant: "destructive", title: "Creation Failed", description: errorMessage });
-      // Do not close dialog on error, user might want to retry
     }
   };
+
+  const handleEditProjectSubmit = async (data: { name: string; description?: string }) => {
+    if (!projectToEdit || !currentUser || currentUser.uid !== projectToEdit.ownerId) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "Only the project owner can edit details."});
+      return;
+    }
+    setIsSubmittingProjectEdit(true);
+    try {
+      await updateProjectDetails(projectToEdit.id, data);
+      toast({ title: "Project Updated", description: `"${data.name}" has been successfully updated.` });
+      setIsEditProjectDialogOpen(false);
+      setProjectToEdit(null);
+      await fetchDashboardData(); // Refresh project list
+    } catch (error) {
+      console.error("Error updating project:", error);
+      const errorMessage = error instanceof Error ? error.message : "Could not update project.";
+      toast({ variant: "destructive", title: "Update Failed", description: errorMessage });
+    } finally {
+      setIsSubmittingProjectEdit(false);
+    }
+  };
+
+  const openEditProjectDialog = (project: Project) => {
+    setProjectToEdit(project);
+    setIsEditProjectDialogOpen(true);
+  };
+  
+  const openDeleteProjectDialog = (project: Project) => {
+    setProjectToDelete(project);
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!projectToDelete || !currentUser || currentUser.uid !== projectToDelete.ownerId) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "Only the project owner can delete projects."});
+      setProjectToDelete(null);
+      return;
+    }
+    setIsDeletingProject(true);
+    try {
+      await deleteProjectFromDb(projectToDelete.id);
+      toast({ title: "Project Deleted", description: `"${projectToDelete.name}" has been successfully deleted.` });
+      setProjectToDelete(null);
+      await fetchDashboardData(); // Refresh project list
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      const errorMessage = error instanceof Error ? error.message : "Could not delete project.";
+      toast({ variant: "destructive", title: "Delete Failed", description: errorMessage });
+    } finally {
+      setIsDeletingProject(false);
+    }
+  };
+
 
   const openManageMembersDialog = (project: Project) => {
     if (!project || !project.id) {
@@ -114,7 +169,6 @@ export default function DashboardPage() {
   };
 
   const onMembersUpdated = async () => {
-    // This will re-fetch projects and users, and also update selectedProjectForMembers if dialog is open
     if (currentUser?.uid) {
       await fetchDashboardData(); 
     }
@@ -148,7 +202,7 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto"> {/* Adjusted max-height */}
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
                 <div className="space-y-4">
                   {projects.map((project) => (
                     <Card key={project.id} className="hover:shadow-md transition-shadow">
@@ -186,9 +240,17 @@ export default function DashboardPage() {
                                 <Link href={`/projects/${project.id}`}>View Board</Link>
                             </Button>
                             {currentUser?.uid === project.ownerId && (
-                              <Button variant="outline" size="sm" onClick={() => openManageMembersDialog(project)}>
-                                  <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Members
-                              </Button>
+                              <>
+                                <Button variant="outline" size="sm" onClick={() => openEditProjectDialog(project)}>
+                                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit Details
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => openManageMembersDialog(project)}>
+                                    <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Members
+                                </Button>
+                                <Button variant="destructiveOutline" size="sm" onClick={() => openDeleteProjectDialog(project)}>
+                                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete Project
+                                </Button>
+                              </>
                             )}
                         </div>
                       </CardFooter>
@@ -219,7 +281,7 @@ export default function DashboardPage() {
                 <div className="flex items-center space-x-3 p-2"><Skeleton className="h-9 w-9 rounded-full" /><Skeleton className="h-4 w-28" /></div>
               </div>
             ) : allUsers.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4"> {/* Adjusted max-height */}
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4">
                 <ul className="space-y-3">
                   {allUsers.map((user) => (
                     <li key={user.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50">
@@ -227,7 +289,7 @@ export default function DashboardPage() {
                         <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile avatar" />
                         <AvatarFallback>{user.name?.substring(0, 2).toUpperCase() || user.email?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0"> {/* Added min-w-0 for text truncation */}
+                      <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-foreground truncate" title={user.name}>{user.name}</span>
                             <Badge variant={user.role === 'admin' ? "default" : "secondary"} className="capitalize text-xs flex-shrink-0">
@@ -261,7 +323,6 @@ export default function DashboardPage() {
       )}
       {selectedProjectForMembers && currentUser?.uid === selectedProjectForMembers.ownerId && (
         <ManageProjectMembersDialog
-          // Ensure the dialog gets a key that changes if critical project aspects change, forcing re-initialization
           key={selectedProjectForMembers.id + (selectedProjectForMembers.memberIds?.join('') || '') + JSON.stringify(selectedProjectForMembers.memberRoles || {})}
           project={selectedProjectForMembers}
           allUsers={allUsers}
@@ -273,6 +334,40 @@ export default function DashboardPage() {
           onMembersUpdate={onMembersUpdated}
         />
       )}
+      {projectToEdit && currentUser?.uid === projectToEdit.ownerId && (
+        <EditProjectDialog
+          isOpen={isEditProjectDialogOpen}
+          onOpenChange={(isOpen) => {
+            setIsEditProjectDialogOpen(isOpen);
+            if (!isOpen) setProjectToEdit(null);
+          }}
+          project={projectToEdit}
+          onEditProject={handleEditProjectSubmit}
+          isSubmitting={isSubmittingProjectEdit}
+        />
+      )}
+      <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the project
+              "{projectToDelete?.name}" and all its tasks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setProjectToDelete(null)} disabled={isDeletingProject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeletingProject}
+            >
+              {isDeletingProject ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete Project
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
