@@ -313,7 +313,7 @@ export default function DashboardPage() {
                   {projects.map((project) => (
                     <Card
                       key={project.id}
-                      className="flex-flow shrink hover:shadow-md transition-shadow"
+                      className="flex-flow shrink hover:shadow-md transition-shadow m-0 p-0 lg:m-2 lg:p-4 min-w-2"
                     >
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
