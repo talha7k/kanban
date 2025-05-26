@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge"; // Added import for Badge
 import { addUserToProject, removeUserFromProject, updateProjectUserRole } from "@/lib/firebaseService";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Users, X, Check, ChevronsUpDown, UserPlus, ShieldCheck, UserCog } from "lucide-react";
@@ -254,3 +255,5 @@ export function ManageProjectMembersDialog({
     </Dialog>
   );
 }
+
+    

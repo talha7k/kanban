@@ -135,7 +135,7 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4"> {/* Adjusted max-height */}
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto"> {/* Adjusted max-height */}
                 <div className="space-y-4">
                   {projects.map((project) => (
                     <Card key={project.id} className="hover:shadow-md transition-shadow">
