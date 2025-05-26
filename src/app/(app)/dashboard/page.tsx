@@ -311,21 +311,15 @@ export default function DashboardPage() {
               <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
                 <div className="space-y-4">
                   {projects.map((project) => (
-                    <div
+                    <Card
                       key={project.id}
-                      className="flex flex-col shrink hover:shadow-md transition-shadow
-                 p-0 m-0 sm:p-6 sm:m-0 border rounded-lg bg-card text-card-foreground shadow-sm" // Mimics Card styling but with p-0 m-0 on small screens
+                      className="flex-flow shrink hover:shadow-md transition-shadow"
                     >
-                      {/* Mimics CardHeader */}
-                      <div className="pb-3 px-4 pt-4 sm:px-6 sm:pt-6">
-                        {" "}
-                        {/* Add padding for inner content */}
+                      <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
-                          <h3 className="text-lg font-semibold tracking-tight">
-                            {" "}
-                            {/* Mimics CardTitle */}
+                          <CardTitle className="text-lg">
                             {project.name}
-                          </h3>
+                          </CardTitle>
                           {currentUser?.uid === project.ownerId && (
                             <Badge
                               variant="outline"
@@ -335,17 +329,11 @@ export default function DashboardPage() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px] break-words">
-                          {" "}
-                          {/* Mimics CardDescription */}
+                        <CardDescription className="line-clamp-2 min-h-[40px] break-words">
                           {project.description || "No description available."}
-                        </p>
-                      </div>
-
-                      {/* Mimics CardFooter */}
-                      <div className="flex flex-col items-start space-y-3 px-4 pb-4 sm:px-6 sm:pb-6">
-                        {" "}
-                        {/* Add padding for inner content */}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardFooter className="flex flex-col items-start space-y-3">
                         <div className="flex items-center space-x-2 mb-1">
                           {(project.memberIds || [])
                             .slice(0, 3)
@@ -416,8 +404,8 @@ export default function DashboardPage() {
                             </>
                           )}
                         </div>
-                      </div>
-                    </div>
+                      </CardFooter>
+                    </Card>
                   ))}
                 </div>
               </ScrollArea>
