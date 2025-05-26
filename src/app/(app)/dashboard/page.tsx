@@ -51,6 +51,7 @@ export default function DashboardPage() {
         if (updatedSelectedProject) {
           setSelectedProjectForMembers(updatedSelectedProject);
         } else {
+          // If the selected project for members is no longer in the list (e.g., deleted), close the dialog.
           setIsManageMembersDialogOpen(false);
           setSelectedProjectForMembers(null);
         }
@@ -87,12 +88,13 @@ export default function DashboardPage() {
     try {
       const newProject = await createProjectInDb(projectData, currentUser.uid);
       
+      // Optimistic update
       setProjects(prevProjects => [newProject, ...prevProjects].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setIsCreateProjectDialogOpen(false); 
       
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
       
-      // No need to call fetchDashboardData immediately due to optimistic update
+      // Fetch in background for consistency, but UI updated optimistically
       // await fetchDashboardData(); 
       
     } catch (error) {
@@ -165,6 +167,8 @@ export default function DashboardPage() {
   };
 
   const onMembersUpdated = async () => {
+    // This will re-fetch projects, which includes updated memberIds and memberRoles
+    // The ManageProjectMembersDialog's key prop will ensure it re-renders if selectedProjectForMembers changes.
     if (currentUser?.uid) {
       await fetchDashboardData(); 
     }
@@ -197,15 +201,15 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-auto">
                 <div className="space-y-4">
                   {projects.map((project) => (
-                    <Card key={project.id} className="hover:shadow-md transition-shadow">
+                    <Card key={project.id} className="bg-primary/5 hover:shadow-lg transition-shadow">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
-                            <CardTitle className="text-lg">{project.name}</CardTitle>
+                            <CardTitle className="text-lg flex-1 min-w-0 break-words">{project.name}</CardTitle>
                             {currentUser?.uid === project.ownerId && (
-                                <Badge variant="outline" className="ml-2 border-accent text-accent">
+                                <Badge variant="outline" className="ml-2 border-accent text-accent flex-shrink-0">
                                     <Crown className="mr-1.5 h-3.5 w-3.5" /> Owner
                                 </Badge>
                             )}
