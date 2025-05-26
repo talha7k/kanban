@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     if (!currentUser?.uid) return;
     setIsLoadingProjects(true);
-    setIsLoadingUsers(true); // Ensure we reset loading state for users too
+    setIsLoadingUsers(true); 
     try {
       const userProjects = await getProjectsForUser(currentUser.uid);
       setProjects(userProjects);
@@ -51,6 +51,7 @@ export default function DashboardPage() {
         if (updatedSelectedProject) {
           setSelectedProjectForMembers(updatedSelectedProject);
         } else {
+          // If the selected project for members is no longer in the list (e.g., deleted), close the dialog
           setIsManageMembersDialogOpen(false);
           setSelectedProjectForMembers(null);
         }
@@ -87,17 +88,14 @@ export default function DashboardPage() {
     try {
       const newProject = await createProjectInDb(projectData, currentUser.uid);
       
-      setProjects(prevProjects => {
-        if (prevProjects.find(p => p.id === newProject.id)) {
-          return prevProjects.map(p => p.id === newProject.id ? newProject : p);
-        }
-        return [...prevProjects, newProject];
-      });
+      // Optimistic update
+      setProjects(prevProjects => [newProject, ...prevProjects]);
+      setIsCreateProjectDialogOpen(false); 
       
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
-      setIsCreateProjectDialogOpen(false);
       
-      await fetchDashboardData(); // Ensure consistency
+      // Fetch for consistency, though UI updated optimistically
+      await fetchDashboardData(); 
       
     } catch (error) {
       console.error("Error creating project:", error);
@@ -185,7 +183,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3  gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Projects Section */}
         <Card className="lg:col-span-2 shadow-lg">
           <CardHeader>
@@ -202,7 +200,7 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto  lg:max-h-[500px] pr-4 overflow-y-auto">
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
                 <div className="space-y-4">
                   {projects.map((project) => (
                     <Card key={project.id} className="hover:shadow-md transition-shadow">
@@ -215,7 +213,7 @@ export default function DashboardPage() {
                                 </Badge>
                             )}
                         </div>
-                        <CardDescription className="line-clamp-2 h-[40px] break-words">{project.description || 'No description available.'}</CardDescription>
+                        <CardDescription className="line-clamp-2 min-h-[40px] break-words">{project.description || 'No description available.'}</CardDescription>
                       </CardHeader>
                       <CardFooter className="flex flex-col items-start space-y-3">
                         <div className="flex items-center space-x-2 mb-1">
@@ -281,7 +279,7 @@ export default function DashboardPage() {
                 <div className="flex items-center space-x-3 p-2"><Skeleton className="h-9 w-9 rounded-full" /><Skeleton className="h-4 w-28" /></div>
               </div>
             ) : allUsers.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[500px] lg:max-h-[500px] pr-4 overflow-y-auto">
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
                 <ul className="space-y-3">
                   {allUsers.map((user) => (
                     <li key={user.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50">
@@ -371,3 +369,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

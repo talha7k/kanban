@@ -9,7 +9,7 @@ import { TaskDetailsDialog } from './TaskDetailsDialog';
 import { useState, useEffect, useMemo } from 'react';
 import type { TaskFormData } from './TaskFormFields';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, ListFilter, UserCheck } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -48,6 +48,8 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDeleteId, setTaskToDeleteId] = useState<TaskId | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taskViewFilter, setTaskViewFilter] = useState<'all' | 'mine'>('all');
+
 
   const { currentUser, userProfile } = useAuth();
   const { toast } = useToast();
@@ -60,7 +62,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   
   const currentUserProjectRole = useMemo((): UserProjectRole | null => {
     if (!currentUser || !projectData.memberRoles) return null;
-    if (isOwner) return 'manager'; // Owner always has manager equivalent permissions for their project
+    if (isOwner) return 'manager'; 
     return projectData.memberRoles[currentUser.uid] || null;
   }, [currentUser, projectData.memberRoles, isOwner]);
 
@@ -74,6 +76,14 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     ]);
     return users.filter(user => projectMemberAndOwnerIds.has(user.id));
   }, [projectData, users]);
+
+  const filteredTasks = useMemo(() => {
+    if (!projectData || !currentUser) return [];
+    if (taskViewFilter === 'mine') {
+      return projectData.tasks.filter(task => task.assigneeUids?.includes(currentUser.uid));
+    }
+    return projectData.tasks;
+  }, [projectData, currentUser, taskViewFilter]);
 
 
   if (!projectData || !users) {
@@ -93,10 +103,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       setIsSubmitting(false);
       return;
     }
-     if (!userProfile && !isOwner) { // Owner might not need full profile to add tasks if reporter is self
+     if (!userProfile && !isOwner) {
         toast({ variant: "default", title: "User Profile Warning", description: "User profile not fully loaded. Task reporter might not be set if you proceed." });
     }
-
 
     const newTaskPayload: NewTaskData = {
       ...taskData,
@@ -163,7 +172,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   };
 
   const openDeleteConfirm = (taskId: TaskId) => {
-    if (!canManageTasks) { // Use canManageTasks which includes owner and manager roles
+    if (!canManageTasks) { 
       toast({ variant: "destructive", title: "Permission Denied", description: "You do not have permission to delete tasks." });
       return;
     }
@@ -305,15 +314,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         return task;
     });
 
-    updatedTasksOptimistic.sort((a, b) => {
-        if (a.columnId === b.columnId) {
-            return a.order - b.order;
-        }
-        const columnAOrder = projectData.columns.find(c => c.id === a.columnId)?.order ?? 0;
-        const columnBOrder = projectData.columns.find(c => c.id === b.columnId)?.order ?? 0;
-        return columnAOrder - columnBOrder;
-    });
-
+    // Re-calculate order for all tasks in the source and target columns if needed
+    // For simplicity, we assume new task goes to the end of the target column.
+    // A more robust solution would re-order tasks in both columns.
 
     setProjectData(prev => ({ ...prev!, tasks: updatedTasksOptimistic }));
     setDraggedTaskId(null);
@@ -321,6 +324,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
     try {
       await moveTaskInProject(projectData.id, sourceTaskId, targetColumnId, movedTaskOrder);
+      // Fetch updated project data to ensure order is correct from server
+      const updatedProject = await initialProject; // This needs to be dynamic based on getProjectById
+      if (updatedProject) setProjectData(updatedProject);
       toast({ title: "Task Moved", description: `"${taskBeingMoved.title}" moved.` });
     } catch (error) {
       console.error("Error moving task:", error);
@@ -331,65 +337,134 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     }
   };
 
+  const handleMoveToNextColumn = async (taskToMove: Task) => {
+    if (!taskToMove || !currentUser) return;
+
+    const canMoveThisTask = canManageTasks || taskToMove.assigneeUids?.includes(currentUser.uid);
+    if (!canMoveThisTask) {
+        toast({ variant: "destructive", title: "Permission Denied", description: "You can only move tasks you are assigned to, or if you are a manager/owner."});
+        return;
+    }
+
+    const sortedColumns = [...projectData.columns].sort((a, b) => a.order - b.order);
+    const currentColumnIndex = sortedColumns.findIndex(col => col.id === taskToMove.columnId);
+
+    if (currentColumnIndex === -1 || currentColumnIndex === sortedColumns.length - 1) {
+      toast({ variant: "default", title: "No Next Column", description: "This task is already in the last column." });
+      return;
+    }
+    const nextColumn = sortedColumns[currentColumnIndex + 1];
+    const targetColumnId = nextColumn.id;
+    const newOrder = projectData.tasks.filter(t => t.columnId === targetColumnId).length;
+
+    const originalTasks = [...projectData.tasks];
+    const updatedTasksOptimistic = projectData.tasks.map(task =>
+      task.id === taskToMove.id ? { ...task, columnId: targetColumnId, order: newOrder, updatedAt: new Date().toISOString() } : task
+    );
+
+    setProjectData(prev => ({ ...prev!, tasks: updatedTasksOptimistic }));
+    setIsSubmitting(true);
+
+    try {
+      await moveTaskInProject(projectData.id, taskToMove.id, targetColumnId, newOrder);
+       // Fetch updated project data to ensure order is correct from server
+      const updatedProject = await initialProject; // This needs to be dynamic based on getProjectById
+      if (updatedProject) setProjectData(updatedProject);
+      toast({ title: "Task Moved", description: `"${taskToMove.title}" moved to ${nextColumn.title}.` });
+    } catch (error) {
+      console.error("Error moving task:", error);
+      toast({ variant: "destructive", title: "Error Moving Task", description: error instanceof Error ? error.message : "Could not move task." });
+      setProjectData(prev => ({ ...prev!, tasks: originalTasks })); // Rollback
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   return (
     <div className="container mx-auto py-6 h-full flex flex-col">
-      <div className="flex justify-between items-center mb-6 px-1">
-        {/* Project name and edit button are now in ProjectPage.tsx header */}
-        <div></div> {/* Placeholder to keep Add New Task button to the right */}
-        <Button
-            onClick={() => {
-                if (projectData.columns.length === 0) {
-                    toast({variant: "destructive", title: "No Columns", description: "Please add a column to the project first."});
-                    return;
-                }
-                setSelectedColumnIdForNewTask(projectData.columns.sort((a,b) => a.order - b.order)[0]?.id || null);
-                setIsAddTaskDialogOpen(true);
-            }}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground"
-            disabled={isSubmitting || projectData.columns.length === 0}
-        >
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-          Add New Task
-        </Button>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 px-1 gap-2">
+         <div className="flex gap-2 items-center">
+            <Button 
+                variant={taskViewFilter === 'all' ? 'default' : 'outline'} 
+                onClick={() => setTaskViewFilter('all')}
+                size="sm"
+            >
+                <ListFilter className="mr-2 h-4 w-4" /> All Tasks
+            </Button>
+            <Button 
+                variant={taskViewFilter === 'mine' ? 'default' : 'outline'} 
+                onClick={() => setTaskViewFilter('mine')}
+                size="sm"
+            >
+                <UserCheck className="mr-2 h-4 w-4" /> My Tasks
+            </Button>
+        </div>
+        {canManageTasks && (
+            <Button
+                onClick={() => {
+                    if (projectData.columns.length === 0) {
+                        toast({variant: "destructive", title: "No Columns", description: "Please add a column to the project first."});
+                        return;
+                    }
+                    setSelectedColumnIdForNewTask(projectData.columns.sort((a,b) => a.order - b.order)[0]?.id || null);
+                    setIsAddTaskDialogOpen(true);
+                }}
+                className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
+                disabled={isSubmitting || projectData.columns.length === 0}
+            >
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            Add New Task
+            </Button>
+        )}
       </div>
-      <div className="flex-1 justify-between grid grid-cols-1 lg:flex lg:space-x-4 gap-4 lg:gap-0 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:flex lg:gap-4 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">
         {projectData.columns.sort((a,b) => a.order - b.order).map(column => (
           <KanbanColumn
             key={column.id}
             column={column}
-            tasks={projectData.tasks}
+            tasks={filteredTasks} // Use filtered tasks
             users={users}
+            projectColumns={projectData.columns}
             canManageTasks={canManageTasks}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
-            onAddTask={(colId) => { setSelectedColumnIdForNewTask(colId); setIsAddTaskDialogOpen(true); }}
+            onAddTask={(colId) => { 
+                if (!canManageTasks) {
+                    toast({variant: "destructive", title: "Permission Denied", description: "You do not have permission to add tasks."});
+                    return;
+                }
+                setSelectedColumnIdForNewTask(colId); setIsAddTaskDialogOpen(true); 
+            }}
             onEditTask={(taskToEdit) => { setTaskToEdit(taskToEdit); setIsEditTaskDialogOpen(true); }}
             onDeleteTask={openDeleteConfirm}
             onViewTaskDetails={(task) => { setTaskToView(task); setIsTaskDetailsDialogOpen(true); }}
+            onMoveToNextColumn={handleMoveToNextColumn}
             isSubmitting={isSubmitting}
           />
         ))}
          {projectData.columns.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-center p-4">
+          <div className="flex-1 flex items-center justify-center text-center p-4 col-span-1 md:col-span-2 lg:col-span-1"> {/* Adjust col-span for placeholder */}
             <p className="text-muted-foreground">This project has no columns yet. <br/>The project owner can configure columns in project settings (feature coming soon).</p>
           </div>
         )}
       </div>
 
-      <AddTaskDialog
-        isOpen={isAddTaskDialogOpen}
-        onOpenChange={(isOpen) => {
-          setIsAddTaskDialogOpen(isOpen);
-          if (!isOpen) setSelectedColumnIdForNewTask(null);
-        }}
-        onAddTask={handleAddTask}
-        columnId={selectedColumnIdForNewTask}
-        assignableUsers={assignableUsers}
-        allTasksForDependencies={allTasksForDependencies}
-        isSubmitting={isSubmitting}
-      />
+      {canManageTasks && (
+        <AddTaskDialog
+            isOpen={isAddTaskDialogOpen}
+            onOpenChange={(isOpen) => {
+            setIsAddTaskDialogOpen(isOpen);
+            if (!isOpen) setSelectedColumnIdForNewTask(null);
+            }}
+            onAddTask={handleAddTask}
+            columnId={selectedColumnIdForNewTask}
+            assignableUsers={assignableUsers}
+            allTasksForDependencies={allTasksForDependencies}
+            isSubmitting={isSubmitting}
+        />
+      )}
       <EditTaskDialog
         isOpen={isEditTaskDialogOpen}
         onOpenChange={(isOpen) => {
@@ -442,3 +517,4 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   );
 }
 
+    
