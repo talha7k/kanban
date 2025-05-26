@@ -51,7 +51,6 @@ export default function DashboardPage() {
         if (updatedSelectedProject) {
           setSelectedProjectForMembers(updatedSelectedProject);
         } else {
-          // If the selected project for members is no longer in the list (e.g., deleted), close the dialog
           setIsManageMembersDialogOpen(false);
           setSelectedProjectForMembers(null);
         }
@@ -88,14 +87,13 @@ export default function DashboardPage() {
     try {
       const newProject = await createProjectInDb(projectData, currentUser.uid);
       
-      // Optimistic update
-      setProjects(prevProjects => [newProject, ...prevProjects]);
+      setProjects(prevProjects => [newProject, ...prevProjects].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setIsCreateProjectDialogOpen(false); 
       
       toast({ title: "Project Created!", description: `"${newProject.name}" has been successfully created.` });
       
-      // Fetch for consistency, though UI updated optimistically
-      await fetchDashboardData(); 
+      // No need to call fetchDashboardData immediately due to optimistic update
+      // await fetchDashboardData(); 
       
     } catch (error) {
       console.error("Error creating project:", error);
@@ -115,7 +113,7 @@ export default function DashboardPage() {
       toast({ title: "Project Updated", description: `"${data.name}" has been successfully updated.` });
       setIsEditProjectDialogOpen(false);
       setProjectToEdit(null);
-      await fetchDashboardData(); // Refresh project list
+      await fetchDashboardData(); 
     } catch (error) {
       console.error("Error updating project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not update project.";
@@ -145,7 +143,7 @@ export default function DashboardPage() {
       await deleteProjectFromDb(projectToDelete.id);
       toast({ title: "Project Deleted", description: `"${projectToDelete.name}" has been successfully deleted.` });
       setProjectToDelete(null);
-      await fetchDashboardData(); // Refresh project list
+      await fetchDashboardData(); 
     } catch (error) {
       console.error("Error deleting project:", error);
       const errorMessage = error instanceof Error ? error.message : "Could not delete project.";
@@ -184,7 +182,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Projects Section */}
         <Card className="lg:col-span-2 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-2xl">
@@ -262,7 +259,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Users Section */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-2xl">

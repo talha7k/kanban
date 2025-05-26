@@ -10,7 +10,7 @@ interface KanbanColumnProps {
   column: Column;
   tasks: Task[];
   users: UserProfile[];
-  projectColumns: Column[]; // To determine next column for moving tasks
+  projectColumns: Column[]; 
   canManageTasks: boolean; 
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
@@ -20,6 +20,7 @@ interface KanbanColumnProps {
   onDeleteTask: (taskId: string) => void;
   onViewTaskDetails: (task: Task) => void;
   onMoveToNextColumn: (task: Task) => void;
+  onMoveToPreviousColumn: (task: Task) => void; 
   isSubmitting?: boolean;
 }
 
@@ -37,6 +38,7 @@ export function KanbanColumn({
   onDeleteTask,
   onViewTaskDetails,
   onMoveToNextColumn,
+  onMoveToPreviousColumn, 
   isSubmitting,
 }: KanbanColumnProps) {
   const columnTasks = tasks
@@ -67,6 +69,7 @@ export function KanbanColumn({
             onDelete={onDeleteTask}
             onViewDetails={onViewTaskDetails}
             onMoveToNextColumn={onMoveToNextColumn}
+            onMoveToPreviousColumn={onMoveToPreviousColumn} 
             isSubmitting={isSubmitting}
           />
         ))}

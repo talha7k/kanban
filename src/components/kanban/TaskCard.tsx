@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Edit2, Trash2, MessageSquare, Loader2, Clock, ArrowRightCircle } from 'lucide-react';
+import { Edit2, Trash2, MessageSquare, Loader2, Clock, ArrowRightCircle, ArrowLeftCircle } from 'lucide-react';
 import { format, formatDistanceToNowStrict, differenceInDays, isToday, isPast, isValid, parseISO } from 'date-fns';
-import { useAuth } from '@/hooks/useAuth'; // To check current user for move permission
+import { useAuth } from '@/hooks/useAuth'; 
 import React from 'react';
 
 
@@ -22,6 +22,7 @@ interface TaskCardProps {
   onDelete: (taskId: string) => void;
   onViewDetails: (task: Task) => void;
   onMoveToNextColumn: (task: Task) => void;
+  onMoveToPreviousColumn: (task: Task) => void; 
   isSubmitting?: boolean;
 }
 
@@ -34,7 +35,8 @@ export function TaskCard({
     onEdit, 
     onDelete, 
     onViewDetails,
-    onMoveToNextColumn, 
+    onMoveToNextColumn,
+    onMoveToPreviousColumn,
     isSubmitting 
 }: TaskCardProps) {
   const { currentUser } = useAuth();
@@ -43,7 +45,7 @@ export function TaskCard({
   const getPriorityBadgeVariant = (priority: Task['priority']) => {
     switch (priority) {
       case 'HIGH': return 'destructive';
-      case 'MEDIUM': return 'secondary'; // Will use accent color via className
+      case 'MEDIUM': return 'secondary'; 
       case 'LOW': return 'outline';
       default: return 'default';
     }
@@ -56,17 +58,16 @@ export function TaskCard({
     if (!isValid(dueDate)) return null;
 
     const now = new Date();
-    // Ensure we compare date parts only, not time
     const dueDateStartOfDay = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
     const nowStartOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     const daysDiff = differenceInDays(dueDateStartOfDay, nowStartOfDay);
 
-    if (daysDiff < 0) { // Overdue
+    if (daysDiff < 0) { 
         return { text: `Overdue by ${Math.abs(daysDiff)}d`, colorClass: "text-red-500 dark:text-red-400", icon: <Clock className="h-3 w-3 mr-1" /> };
-    } else if (daysDiff === 0) { // Due today
+    } else if (daysDiff === 0) { 
         return { text: "Due today", colorClass: "text-orange-500 dark:text-orange-400", icon: <Clock className="h-3 w-3 mr-1" /> };
-    } else { // Due in future
+    } else { 
         return { text: `${daysDiff}d left`, colorClass: "text-green-600 dark:text-green-400", icon: <Clock className="h-3 w-3 mr-1" /> };
     }
   };
@@ -76,12 +77,13 @@ export function TaskCard({
   const sortedColumns = [...projectColumns].sort((a,b) => a.order - b.order);
   const currentColumnIndex = sortedColumns.findIndex(col => col.id === task.columnId);
   const hasNextColumn = currentColumnIndex !== -1 && currentColumnIndex < sortedColumns.length - 1;
+  const hasPreviousColumn = currentColumnIndex !== -1 && currentColumnIndex > 0;
   const canMoveTask = canManageTask || task.assigneeUids?.includes(currentUser?.uid || '');
 
 
   return (
     <Card
-      draggable={!isSubmitting && canMoveTask} // Only draggable if user can move
+      draggable={!isSubmitting && canMoveTask} 
       onDragStart={(e) => !isSubmitting && canMoveTask && onDragStart(e, task.id)}
       className={`mb-3 shadow-md hover:shadow-lg transition-shadow duration-200 bg-card ${isSubmitting ? 'opacity-70 cursor-not-allowed' : (canMoveTask ? 'cursor-grab active:cursor-grabbing' : 'cursor-default')}`}
       onClick={() => !isSubmitting && onViewDetails(task)}
@@ -132,6 +134,19 @@ export function TaskCard({
         </div>
 
         <div className="flex space-x-1 w-full justify-end items-center mt-2">
+          {canMoveTask && hasPreviousColumn && (
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => { e.stopPropagation(); onMoveToPreviousColumn(task); }}
+                aria-label="Move to previous column"
+                title="Move to previous column"
+                disabled={isSubmitting}
+            >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeftCircle className="h-4 w-4" />}
+            </Button>
+          )}
           {canMoveTask && hasNextColumn && (
             <Button
                 variant="ghost"

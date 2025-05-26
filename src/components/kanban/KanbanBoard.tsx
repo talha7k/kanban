@@ -27,6 +27,7 @@ import {
   deleteTaskFromProject,
   moveTaskInProject,
   addCommentToTask,
+  getProjectById, // Import getProjectById
 } from '@/lib/firebaseService';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -79,10 +80,11 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
   const filteredTasks = useMemo(() => {
     if (!projectData || !currentUser) return [];
+    const tasksToFilter = projectData.tasks || [];
     if (taskViewFilter === 'mine') {
-      return projectData.tasks.filter(task => task.assigneeUids?.includes(currentUser.uid));
+      return tasksToFilter.filter(task => task.assigneeUids?.includes(currentUser.uid));
     }
-    return projectData.tasks;
+    return tasksToFilter;
   }, [projectData, currentUser, taskViewFilter]);
 
 
@@ -103,7 +105,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       setIsSubmitting(false);
       return;
     }
-     if (!userProfile && !isOwner) {
+     if (!userProfile && !isOwner) { // Owner doesn't need a separate Firestore profile for basic ops
         toast({ variant: "default", title: "User Profile Warning", description: "User profile not fully loaded. Task reporter might not be set if you proceed." });
     }
 
@@ -304,60 +306,48 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     }
 
     const originalTasks = [...projectData.tasks];
-    let movedTaskOrder = 0;
+    
+    // Calculate new order: place at the end of the target column
+    const newOrder = projectData.tasks.filter(t => t.columnId === targetColumnId && t.id !== sourceTaskId).length;
 
     const updatedTasksOptimistic = projectData.tasks.map(task => {
         if (task.id === sourceTaskId) {
-            movedTaskOrder = projectData.tasks.filter(t => t.columnId === targetColumnId && t.id !== sourceTaskId).length;
-            return { ...task, columnId: targetColumnId, order: movedTaskOrder, updatedAt: new Date().toISOString() };
+            return { ...task, columnId: targetColumnId, order: newOrder, updatedAt: new Date().toISOString() };
         }
         return task;
     });
-
-    // Re-calculate order for all tasks in the source and target columns if needed
-    // For simplicity, we assume new task goes to the end of the target column.
-    // A more robust solution would re-order tasks in both columns.
-
+    
     setProjectData(prev => ({ ...prev!, tasks: updatedTasksOptimistic }));
     setDraggedTaskId(null);
     setIsSubmitting(true);
 
     try {
-      await moveTaskInProject(projectData.id, sourceTaskId, targetColumnId, movedTaskOrder);
-      // Fetch updated project data to ensure order is correct from server
-      const updatedProject = await initialProject; // This needs to be dynamic based on getProjectById
-      if (updatedProject) setProjectData(updatedProject);
+      await moveTaskInProject(projectData.id, sourceTaskId, targetColumnId, newOrder);
+      // Optionally, re-fetch the project to get the server-confirmed state, though optimistic update handles UI.
+      // const updatedProjectFromServer = await getProjectById(projectData.id);
+      // if (updatedProjectFromServer) setProjectData(updatedProjectFromServer);
       toast({ title: "Task Moved", description: `"${taskBeingMoved.title}" moved.` });
     } catch (error) {
       console.error("Error moving task:", error);
       toast({ variant: "destructive", title: "Error Moving Task", description: error instanceof Error ? error.message : "Could not move task." });
-      setProjectData(prev => ({ ...prev!, tasks: originalTasks }));
+      setProjectData(prev => ({ ...prev!, tasks: originalTasks })); // Rollback optimistic update
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleMoveToNextColumn = async (taskToMove: Task) => {
+  const handleTaskColumnChange = async (taskToMove: Task, targetColumnId: ColumnId, targetColumnTitle: string) => {
     if (!taskToMove || !currentUser) return;
-
+    
     const canMoveThisTask = canManageTasks || taskToMove.assigneeUids?.includes(currentUser.uid);
     if (!canMoveThisTask) {
-        toast({ variant: "destructive", title: "Permission Denied", description: "You can only move tasks you are assigned to, or if you are a manager/owner."});
-        return;
-    }
-
-    const sortedColumns = [...projectData.columns].sort((a, b) => a.order - b.order);
-    const currentColumnIndex = sortedColumns.findIndex(col => col.id === taskToMove.columnId);
-
-    if (currentColumnIndex === -1 || currentColumnIndex === sortedColumns.length - 1) {
-      toast({ variant: "default", title: "No Next Column", description: "This task is already in the last column." });
+      toast({ variant: "destructive", title: "Permission Denied", description: "You can only move tasks you are assigned to, or if you are a manager/owner."});
       return;
     }
-    const nextColumn = sortedColumns[currentColumnIndex + 1];
-    const targetColumnId = nextColumn.id;
-    const newOrder = projectData.tasks.filter(t => t.columnId === targetColumnId).length;
 
     const originalTasks = [...projectData.tasks];
+    const newOrder = projectData.tasks.filter(t => t.columnId === targetColumnId && t.id !== taskToMove.id).length;
+
     const updatedTasksOptimistic = projectData.tasks.map(task =>
       task.id === taskToMove.id ? { ...task, columnId: targetColumnId, order: newOrder, updatedAt: new Date().toISOString() } : task
     );
@@ -367,10 +357,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
     try {
       await moveTaskInProject(projectData.id, taskToMove.id, targetColumnId, newOrder);
-       // Fetch updated project data to ensure order is correct from server
-      const updatedProject = await initialProject; // This needs to be dynamic based on getProjectById
-      if (updatedProject) setProjectData(updatedProject);
-      toast({ title: "Task Moved", description: `"${taskToMove.title}" moved to ${nextColumn.title}.` });
+      toast({ title: "Task Moved", description: `"${taskToMove.title}" moved to ${targetColumnTitle}.` });
     } catch (error) {
       console.error("Error moving task:", error);
       toast({ variant: "destructive", title: "Error Moving Task", description: error instanceof Error ? error.message : "Could not move task." });
@@ -378,6 +365,30 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleMoveToNextColumn = async (taskToMove: Task) => {
+    const sortedColumns = [...projectData.columns].sort((a, b) => a.order - b.order);
+    const currentColumnIndex = sortedColumns.findIndex(col => col.id === taskToMove.columnId);
+
+    if (currentColumnIndex === -1 || currentColumnIndex === sortedColumns.length - 1) {
+      toast({ variant: "default", title: "No Next Column", description: "This task is already in the last column." });
+      return;
+    }
+    const nextColumn = sortedColumns[currentColumnIndex + 1];
+    await handleTaskColumnChange(taskToMove, nextColumn.id, nextColumn.title);
+  };
+
+  const handleMoveToPreviousColumn = async (taskToMove: Task) => {
+    const sortedColumns = [...projectData.columns].sort((a, b) => a.order - b.order);
+    const currentColumnIndex = sortedColumns.findIndex(col => col.id === taskToMove.columnId);
+
+    if (currentColumnIndex === -1 || currentColumnIndex === 0) {
+      toast({ variant: "default", title: "No Previous Column", description: "This task is already in the first column." });
+      return;
+    }
+    const previousColumn = sortedColumns[currentColumnIndex - 1];
+    await handleTaskColumnChange(taskToMove, previousColumn.id, previousColumn.title);
   };
 
 
@@ -423,7 +434,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           <KanbanColumn
             key={column.id}
             column={column}
-            tasks={filteredTasks} // Use filtered tasks
+            tasks={filteredTasks} 
             users={users}
             projectColumns={projectData.columns}
             canManageTasks={canManageTasks}
@@ -441,11 +452,12 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             onDeleteTask={openDeleteConfirm}
             onViewTaskDetails={(task) => { setTaskToView(task); setIsTaskDetailsDialogOpen(true); }}
             onMoveToNextColumn={handleMoveToNextColumn}
+            onMoveToPreviousColumn={handleMoveToPreviousColumn}
             isSubmitting={isSubmitting}
           />
         ))}
          {projectData.columns.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-center p-4 col-span-1 md:col-span-2 lg:col-span-1"> {/* Adjust col-span for placeholder */}
+          <div className="flex-1 flex items-center justify-center text-center p-4 col-span-1 md:col-span-2 lg:col-span-1">
             <p className="text-muted-foreground">This project has no columns yet. <br/>The project owner can configure columns in project settings (feature coming soon).</p>
           </div>
         )}
