@@ -308,12 +308,12 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
+              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] overflow-y-auto overflow-x-auto">
                 <div className="space-y-4">
                   {projects.map((project) => (
                     <Card
                       key={project.id}
-                      className="bg-primary/5 hover:shadow-lg transition-shadow overflow-x-auto"
+                      className="bg-primary/5 hover:shadow-lg transition-shadow"
                     >
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
