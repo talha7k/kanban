@@ -2,8 +2,8 @@
 "use client";
 
 import { AppHeader } from '@/components/layout/AppHeader';
-import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+// Toaster is now in root layout, AuthProvider is also in root layout.
+import { useAuth } from '@/contexts/AuthContext'; // Changed from '@/hooks/useAuth' to direct context for clarity
 import { useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -41,20 +41,19 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">
         {children}
       </main>
-      <Toaster />
+      {/* <Toaster /> Toaster is now in root layout */}
     </div>
   );
 }
 
-
-export default function AppLayoutWithAuthProvider({
+// Renamed from AppLayoutWithAuthProvider as AuthProvider is now in root.
+export default function AppPagesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // AuthProvider is no longer needed here, it's in the root layout
   return (
-    <AuthProvider>
-      <ProtectedLayout>{children}</ProtectedLayout>
-    </AuthProvider>
+    <ProtectedLayout>{children}</ProtectedLayout>
   );
 }
