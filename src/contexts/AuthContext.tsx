@@ -37,99 +37,111 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true); // Initialize loading to true
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { toast } = useToast();
+  const { toast } = useToast(); // Keep useToast for other parts, but we'll avoid using it in fetchUserProfile for now
+
+  console.log('[AuthContext] Component Render. Loading:', loading, 'CurrentUser:', currentUser?.uid, 'UserProfile:', userProfile?.name);
 
   const fetchUserProfile = useCallback(async (user: FirebaseUser | null) => {
+    console.log('[AuthContext] fetchUserProfile called for user:', user?.uid);
     if (user) {
       try {
         const profile = await getUserProfile(user.uid);
+        console.log('[AuthContext] Fetched profile from Firestore:', profile ? {name: profile.name, id: profile.id} : null);
         setUserProfile(profile);
       } catch (error) {
-        console.error("Error fetching user profile:", error);
-        setUserProfile(null); 
-        toast({ variant: "destructive", title: "Profile Error", description: "Could not load your user profile." });
+        console.error("[AuthContext] Error fetching user profile:", error);
+        setUserProfile(null);
+        // TEMPORARILY REMOVED TOAST FOR DEBUGGING
+        // toast({ variant: "destructive", title: "Profile Error", description: "Could not load your user profile." });
       }
     } else {
+      console.log('[AuthContext] fetchUserProfile: No user, setting profile to null');
       setUserProfile(null);
     }
-  }, [toast]);
-
+  }, []); // Removed `toast` from dependencies for debugging
 
   useEffect(() => {
-    // setLoading(true); // Moved inside onAuthStateChanged for more precise control
+    console.log('[AuthContext] useEffect for onAuthStateChanged subscribing...');
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true); // Set loading true when auth state changes and before profile fetch
+      console.log('[AuthContext] onAuthStateChanged event. User from Firebase:', user?.uid);
+      console.log('[AuthContext] onAuthStateChanged: Setting loading to TRUE.');
+      setLoading(true);
       setCurrentUser(user);
       await fetchUserProfile(user);
-      setLoading(false); // Set loading false after all async operations are done
+      // Log state *after* updates from fetchUserProfile have settled, though direct values might be from closure
+      console.log('[AuthContext] onAuthStateChanged: After fetchUserProfile. Attempting to set loading to FALSE.');
+      setLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      console.log('[AuthContext] useEffect for onAuthStateChanged cleaning up (unsubscribing).');
+      unsubscribe();
+    };
   }, [fetchUserProfile]);
 
   const refreshUserProfile = useCallback(async () => {
+    console.log('[AuthContext] refreshUserProfile called. Current user in state:', currentUser?.uid);
     if (currentUser) {
+        console.log('[AuthContext] refreshUserProfile: Setting loading to TRUE.');
         setLoading(true);
         await fetchUserProfile(currentUser);
+        console.log('[AuthContext] refreshUserProfile: After fetchUserProfile. Setting loading to FALSE.');
         setLoading(false);
+    } else {
+      console.log('[AuthContext] refreshUserProfile: No current user, cannot refresh.');
     }
   }, [currentUser, fetchUserProfile]);
 
   const signup = async (email: string, password: string, displayName?: string): Promise<FirebaseUser | null> => {
-    // setLoading(true); // Loading state will be handled by onAuthStateChanged
+    console.log('[AuthContext] signup attempt for:', email);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
+      console.log('[AuthContext] signup successful for Firebase user:', firebaseUser.uid);
       const profileData = displayName ? { name: displayName } : {};
       await createUserProfileDocument(firebaseUser, profileData);
-      // onAuthStateChanged will handle setting user and profile, and loading state
+      console.log('[AuthContext] signup: Firestore profile document should be created/ensured.');
+      // onAuthStateChanged will handle setting currentUser, userProfile and loading state
       return firebaseUser;
     } catch (error) {
       const authError = error as AuthError;
-      console.error("Error signing up:", authError);
+      console.error("[AuthContext] Error signing up:", authError);
       toast({ variant: "destructive", title: "Signup Failed", description: authError.message || "Could not create account." });
-      // setLoading(false);
       throw authError;
     }
-    // setLoading(false) is not needed here as onAuthStateChanged will manage it
   };
 
   const login = async (email: string, password: string): Promise<FirebaseUser | null> => {
-    // setLoading(true); // Loading state will be handled by onAuthStateChanged
+    console.log('[AuthContext] login attempt for:', email);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('[AuthContext] login successful for Firebase user:', userCredential.user.uid);
       // onAuthStateChanged listener will handle setting currentUser, userProfile and loading
       return userCredential.user;
     } catch (error) {
       const authError = error as AuthError;
-      console.error("Error logging in:", authError);
+      console.error("[AuthContext] Error logging in:", authError);
       toast({ variant: "destructive", title: "Login Failed", description: authError.message || "Invalid credentials." });
-      // setLoading(false);
       throw authError;
     }
-    // setLoading(false) is not needed here
   };
 
   const logout = async () => {
-    // setLoading(true); // Loading state will be handled by onAuthStateChanged
+    console.log('[AuthContext] logout attempt.');
     try {
       await firebaseSignOut(auth);
+      console.log('[AuthContext] logout successful from Firebase.');
       // onAuthStateChanged listener will set currentUser and userProfile to null and manage loading
-      router.push('/login'); 
+      router.push('/login');
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch (error) {
       const authError = error as AuthError;
-      console.error("Error logging out:", authError);
+      console.error("[AuthContext] Error logging out:", authError);
       toast({ variant: "destructive", title: "Logout Failed", description: authError.message || "Could not log out." });
-      // setLoading(false);
       throw authError;
     }
-    // Explicitly clear states here for immediate UI feedback before onAuthStateChanged might fire.
-    // Though onAuthStateChanged should handle this robustly.
-    // setCurrentUser(null); 
-    // setUserProfile(null);
-    // setLoading(false); // onAuthStateChanged handles this.
   };
 
   const value = {
