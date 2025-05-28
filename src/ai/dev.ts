@@ -1,5 +1,5 @@
-import { config } from 'dotenv';
-config();
+// import { config } from 'dotenv'; // Removed: Next.js handles .env loading.
+// config(); // Removed
 
 import '@/ai/flows/suggest-task-priority.ts';
 import '@/ai/flows/rewrite-task-description.ts';
