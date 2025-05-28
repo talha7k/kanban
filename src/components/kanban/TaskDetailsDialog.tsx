@@ -21,6 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { AIPrioritySuggestor } from './AIPrioritySuggestor';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth'; // Import useAuth
 
 interface TaskDetailsDialogProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ export function TaskDetailsDialog({
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<CommentType[]>([]);
   const { toast } = useToast();
+  const { userProfile, loading: authLoading } = useAuth(); // Get userProfile and authLoading
 
   useEffect(() => {
     if (task?.comments) {
@@ -70,6 +72,7 @@ export function TaskDetailsDialog({
         toast({ variant: "destructive", title: "Empty Comment", description: "Cannot add an empty comment."});
         return;
     }
+    // userProfile check is now implicitly handled by button's disabled state
     await onAddComment(task.id, newComment);
   };
 
@@ -224,11 +227,14 @@ export function TaskDetailsDialog({
                 onChange={(e) => setNewComment(e.target.value)}
                 className="flex-1 min-h-[60px]"
                 rows={2}
-                disabled={isSubmittingComment}
+                disabled={authLoading || !userProfile || isSubmittingComment}
             />
-            <Button onClick={handleAddCommentSubmit} disabled={newComment.trim() === '' || isSubmittingComment}>
+            <Button 
+                onClick={handleAddCommentSubmit} 
+                disabled={authLoading || !userProfile || newComment.trim() === '' || isSubmittingComment}
+            >
                 {isSubmittingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Add Comment
+                {(authLoading || !userProfile) ? "Loading Profile..." : "Add Comment"}
             </Button>
         </DialogFooter>
       </DialogContent>
