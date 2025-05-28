@@ -39,7 +39,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { toast } = useToast(); // Keep useToast for other parts, but we'll avoid using it in fetchUserProfile for now
+  const { toast } = useToast();
 
   console.log('[AuthContext] Component Render. Loading:', loading, 'CurrentUser:', currentUser?.uid, 'UserProfile:', userProfile?.name);
 
@@ -47,20 +47,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     console.log('[AuthContext] fetchUserProfile called for user:', user?.uid);
     if (user) {
       try {
-        const profile = await getUserProfile(user.uid);
-        console.log('[AuthContext] Fetched profile from Firestore:', profile ? {name: profile.name, id: profile.id} : null);
+        let profile = await getUserProfile(user.uid);
+        if (!profile) { // Profile not found, try to create it as a fallback
+          console.warn(`[AuthContext] Profile not found for user ${user.uid}. Attempting to create it.`);
+          // Pass minimal data available from FirebaseUser to createUserProfileDocument
+          // Ensure additionalData expects name, not displayName
+          profile = await createUserProfileDocument(user, { name: user.displayName || undefined });
+          if (profile) {
+            console.log('[AuthContext] Successfully created fallback profile for user:', user.uid, profile);
+          } else {
+            console.error('[AuthContext] Failed to create fallback profile for user:', user.uid);
+          }
+        }
+        console.log('[AuthContext] Fetched/Created profile from Firestore:', profile ? {name: profile.name, id: profile.id} : null);
         setUserProfile(profile);
       } catch (error) {
-        console.error("[AuthContext] Error fetching user profile:", error);
+        console.error("[AuthContext] Error fetching/creating user profile:", error);
         setUserProfile(null);
         // TEMPORARILY REMOVED TOAST FOR DEBUGGING
-        // toast({ variant: "destructive", title: "Profile Error", description: "Could not load your user profile." });
       }
     } else {
       console.log('[AuthContext] fetchUserProfile: No user, setting profile to null');
       setUserProfile(null);
     }
-  }, []); // Removed `toast` from dependencies for debugging
+  }, []);
 
   useEffect(() => {
     console.log('[AuthContext] useEffect for onAuthStateChanged subscribing...');
@@ -69,9 +79,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('[AuthContext] onAuthStateChanged: Setting loading to TRUE.');
       setLoading(true);
       setCurrentUser(user);
-      await fetchUserProfile(user);
-      // Log state *after* updates from fetchUserProfile have settled, though direct values might be from closure
-      console.log('[AuthContext] onAuthStateChanged: After fetchUserProfile. Attempting to set loading to FALSE.');
+      if (user) {
+        await fetchUserProfile(user);
+      } else {
+        setUserProfile(null); // Explicitly set profile to null on logout or no user
+      }
+      console.log('[AuthContext] onAuthStateChanged: After fetchUserProfile logic. Attempting to set loading to FALSE.');
       setLoading(false);
     });
 
@@ -100,6 +113,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       console.log('[AuthContext] signup successful for Firebase user:', firebaseUser.uid);
+      // Ensure additionalData matches what createUserProfileDocument expects (name, not displayName)
       const profileData = displayName ? { name: displayName } : {};
       await createUserProfileDocument(firebaseUser, profileData);
       console.log('[AuthContext] signup: Firestore profile document should be created/ensured.');
