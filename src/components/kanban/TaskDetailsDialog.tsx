@@ -72,6 +72,10 @@ export function TaskDetailsDialog({
         toast({ variant: "destructive", title: "Empty Comment", description: "Cannot add an empty comment."});
         return;
     }
+    if (!userProfile || authLoading) {
+        toast({ variant: "destructive", title: "Profile Issue", description: "User profile not available to add comment."});
+        return;
+    }
     await onAddComment(task.id, newComment);
     setNewComment(''); // Clear input after submission
   };
@@ -101,6 +105,26 @@ export function TaskDetailsDialog({
     return `${daysDiff + 1} day${daysDiff + 1 > 1 ? 's' : ''} left`;
   };
   const dueDateStatusText = getDueDateStatusText();
+
+  let commentButtonText = "Add Comment";
+  let commentButtonDisabled = false;
+  let inputsDisabled = false;
+
+  if (authLoading) {
+    commentButtonText = "Loading Auth...";
+    commentButtonDisabled = true;
+    inputsDisabled = true;
+  } else if (!userProfile) {
+    commentButtonText = "Profile Unavailable";
+    commentButtonDisabled = true;
+    inputsDisabled = true;
+  } else if (isSubmittingComment) {
+    commentButtonText = "Adding...";
+    commentButtonDisabled = true;
+    inputsDisabled = true;
+  } else if (newComment.trim() === '') {
+    commentButtonDisabled = true;
+  }
 
 
   return (
@@ -224,22 +248,22 @@ export function TaskDetailsDialog({
                 onChange={(e) => setNewComment(e.target.value)}
                 className="flex-1 min-h-[60px]"
                 rows={2}
-                disabled={authLoading || !userProfile || isSubmittingComment}
+                disabled={inputsDisabled}
             />
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <AIRewriteCommentButton
                     taskTitle={task.title}
                     currentCommentText={newComment}
                     onCommentRewrite={(rewrittenText) => setNewComment(rewrittenText)}
-                    disabled={authLoading || !userProfile || isSubmittingComment}
+                    disabled={inputsDisabled || newComment.trim() === ''}
                 />
                 <Button 
                     onClick={handleAddCommentSubmit} 
-                    disabled={authLoading || !userProfile || newComment.trim() === '' || isSubmittingComment}
+                    disabled={commentButtonDisabled}
                     className="w-full sm:w-auto"
                 >
                     {isSubmittingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {(authLoading || !userProfile) ? "Loading Profile..." : "Add Comment"}
+                    {commentButtonText}
                 </Button>
             </div>
         </DialogFooter>
