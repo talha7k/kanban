@@ -13,10 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Task, UserProfile, AIPrioritySuggestion } from '@/lib/types';
+import type { Task, UserProfile } from '@/lib/types';
 import { TaskFormFields, type TaskFormData } from './TaskFormFields';
-import { AIPrioritySuggestor } from "./AIPrioritySuggestor";
-import { useState, useEffect } from "react"; 
 import { Loader2 } from "lucide-react";
 
 const taskFormSchema = z.object({
@@ -34,7 +32,7 @@ interface AddTaskDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   onAddTask: (taskData: TaskFormData, columnId: string) => Promise<void> | void; 
   columnId: string | null;
-  assignableUsers: UserProfile[]; // Changed from 'users'
+  assignableUsers: UserProfile[];
   allTasksForDependencies: Pick<Task, 'id' | 'title'>[];
   isSubmitting?: boolean; 
 }
@@ -44,7 +42,7 @@ export function AddTaskDialog({
   onOpenChange,
   onAddTask,
   columnId,
-  assignableUsers, // Changed from 'users'
+  assignableUsers,
   allTasksForDependencies,
   isSubmitting
 }: AddTaskDialogProps) {
@@ -61,14 +59,11 @@ export function AddTaskDialog({
     },
   });
   
-  const [currentTaskDataForAI, setCurrentTaskDataForAI] = useState<Partial<TaskFormData>>({});
-
   const onSubmit = async (data: TaskFormData) => {
     if (!columnId) return; 
     try {
       await onAddTask(data, columnId); 
       form.reset(); 
-      setCurrentTaskDataForAI({}); 
       onOpenChange(false); 
     } catch (error) {
       console.error("Error submitting task from dialog:", error);
@@ -78,25 +73,9 @@ export function AddTaskDialog({
   const handleDialogClose = () => {
     if (!isSubmitting) { 
         form.reset();
-        setCurrentTaskDataForAI({});
         onOpenChange(false);
     }
   };
-
-  const handleAISuggestion = (suggestion: AIPrioritySuggestion) => {
-    form.setValue('priority', suggestion.suggestedPriority);
-  };
-
-  const watchedValues = form.watch();
-  useEffect(() => { 
-    setCurrentTaskDataForAI({
-        title: watchedValues.title,
-        description: watchedValues.description,
-        dueDate: watchedValues.dueDate,
-        dependentTaskTitles: watchedValues.dependentTaskTitles,
-    });
-  }, [watchedValues.title, watchedValues.description, watchedValues.dueDate, watchedValues.dependentTaskTitles]);
-
 
   if (!isOpen || !columnId) return null;
 
@@ -111,15 +90,6 @@ export function AddTaskDialog({
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <TaskFormFields form={form} assignableUsers={assignableUsers} allTasksForDependencies={allTasksForDependencies} />
-          <AIPrioritySuggestor 
-            task={{
-              title: currentTaskDataForAI.title || '', 
-              description: currentTaskDataForAI.description || '',
-              dueDate: currentTaskDataForAI.dueDate,
-              dependentTaskTitles: currentTaskDataForAI.dependentTaskTitles,
-            }}
-            onSuggestion={handleAISuggestion}
-          />
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -132,5 +102,3 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
-
-    

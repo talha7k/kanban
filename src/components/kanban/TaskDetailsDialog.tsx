@@ -19,9 +19,9 @@ import { CommentItem } from './CommentItem';
 import { useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { AIPrioritySuggestor } from './AIPrioritySuggestor';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth'; // Import useAuth
+import { useAuth } from '@/hooks/useAuth'; 
+import { AIRewriteCommentButton } from './AIRewriteCommentButton';
 
 interface TaskDetailsDialogProps {
   isOpen: boolean;
@@ -49,7 +49,7 @@ export function TaskDetailsDialog({
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<CommentType[]>([]);
   const { toast } = useToast();
-  const { userProfile, loading: authLoading } = useAuth(); // Get userProfile and authLoading
+  const { userProfile, loading: authLoading } = useAuth(); 
 
   useEffect(() => {
     if (task?.comments) {
@@ -72,8 +72,8 @@ export function TaskDetailsDialog({
         toast({ variant: "destructive", title: "Empty Comment", description: "Cannot add an empty comment."});
         return;
     }
-    // userProfile check is now implicitly handled by button's disabled state
     await onAddComment(task.id, newComment);
+    setNewComment(''); // Clear input after submission
   };
 
   const getPriorityBadgeVariant = (priority: Task['priority']) => {
@@ -204,15 +204,12 @@ export function TaskDetailsDialog({
                 </div>
               </div>
             )}
-
-             <AIPrioritySuggestor task={task} />
-
-
+            
             <Separator className="my-4" />
 
             <div>
               <h3 className="font-semibold text-lg mb-2 text-foreground flex items-center"><MessageSquare className="h-5 w-5 mr-2" />Comments ({comments.length})</h3>
-              <div className="space-y-1">
+              <div className="space-y-1 max-h-60 overflow-y-auto pr-2">
                 {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
                 {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
               </div>
@@ -220,7 +217,7 @@ export function TaskDetailsDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="flex-col sm:flex-row pt-4 border-t mt-auto">
+        <DialogFooter className="flex-col sm:flex-row pt-4 border-t mt-auto gap-2">
             <Textarea
                 placeholder="Add a comment..."
                 value={newComment}
@@ -229,13 +226,22 @@ export function TaskDetailsDialog({
                 rows={2}
                 disabled={authLoading || !userProfile || isSubmittingComment}
             />
-            <Button 
-                onClick={handleAddCommentSubmit} 
-                disabled={authLoading || !userProfile || newComment.trim() === '' || isSubmittingComment}
-            >
-                {isSubmittingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {(authLoading || !userProfile) ? "Loading Profile..." : "Add Comment"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <AIRewriteCommentButton
+                    taskTitle={task.title}
+                    currentCommentText={newComment}
+                    onCommentRewrite={(rewrittenText) => setNewComment(rewrittenText)}
+                    disabled={authLoading || !userProfile || isSubmittingComment}
+                />
+                <Button 
+                    onClick={handleAddCommentSubmit} 
+                    disabled={authLoading || !userProfile || newComment.trim() === '' || isSubmittingComment}
+                    className="w-full sm:w-auto"
+                >
+                    {isSubmittingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {(authLoading || !userProfile) ? "Loading Profile..." : "Add Comment"}
+                </Button>
+            </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

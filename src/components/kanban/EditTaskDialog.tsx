@@ -13,10 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Task, UserProfile, AIPrioritySuggestion } from '@/lib/types';
+import type { Task, UserProfile } from '@/lib/types';
 import { TaskFormFields, type TaskFormData } from './TaskFormFields';
-import { useEffect, useState } from "react";
-import { AIPrioritySuggestor } from "./AIPrioritySuggestor";
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 const taskFormSchema = z.object({
@@ -34,7 +33,7 @@ interface EditTaskDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   onEditTask: (taskId: string, taskData: TaskFormData) => Promise<void> | void; 
   taskToEdit: Task | null;
-  assignableUsers: UserProfile[]; // Changed from 'users'
+  assignableUsers: UserProfile[];
   allTasksForDependencies: Pick<Task, 'id' | 'title'>[];
   isSubmitting?: boolean; 
 }
@@ -44,7 +43,7 @@ export function EditTaskDialog({
   onOpenChange,
   onEditTask,
   taskToEdit,
-  assignableUsers, // Changed from 'users'
+  assignableUsers,
   allTasksForDependencies,
   isSubmitting
 }: EditTaskDialogProps) {
@@ -52,8 +51,6 @@ export function EditTaskDialog({
     resolver: zodResolver(taskFormSchema),
   });
   
-  const [currentTaskDataForAI, setCurrentTaskDataForAI] = useState<Partial<TaskFormData>>({});
-
   useEffect(() => {
     if (taskToEdit && isOpen) { 
       const defaultValues: TaskFormData = {
@@ -61,12 +58,11 @@ export function EditTaskDialog({
         description: taskToEdit.description || "",
         priority: taskToEdit.priority,
         assigneeUids: taskToEdit.assigneeUids || [],
-        dueDate: taskToEdit.dueDate,
+        dueDate: taskToEdit.dueDate || undefined,
         tags: taskToEdit.tags || [],
         dependentTaskTitles: taskToEdit.dependentTaskTitles || [],
       };
       form.reset(defaultValues);
-      setCurrentTaskDataForAI(defaultValues); 
     } else if (!isOpen) {
       form.reset({ 
         title: "",
@@ -77,7 +73,6 @@ export function EditTaskDialog({
         tags: [],
         dueDate: undefined,
       });
-      setCurrentTaskDataForAI({});
     }
   }, [taskToEdit, form, isOpen]);
 
@@ -86,21 +81,6 @@ export function EditTaskDialog({
     await onEditTask(taskToEdit.id, data);
   };
   
-  const handleAISuggestion = (suggestion: AIPrioritySuggestion) => {
-    form.setValue('priority', suggestion.suggestedPriority);
-  };
-
-  const watchedValues = form.watch();
-   useEffect(() => { 
-    setCurrentTaskDataForAI({
-        title: watchedValues.title,
-        description: watchedValues.description,
-        dueDate: watchedValues.dueDate,
-        dependentTaskTitles: watchedValues.dependentTaskTitles,
-    });
-  }, [watchedValues.title, watchedValues.description, watchedValues.dueDate, watchedValues.dependentTaskTitles, isOpen]); 
-
-
   if (!isOpen || !taskToEdit) return null;
 
   return (
@@ -115,18 +95,9 @@ export function EditTaskDialog({
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <TaskFormFields 
             form={form} 
-            assignableUsers={assignableUsers} // Pass filtered list
+            assignableUsers={assignableUsers}
             allTasksForDependencies={allTasksForDependencies.filter(t => t.id !== taskToEdit.id)} 
             isEditing 
-          />
-           <AIPrioritySuggestor 
-            task={{
-              title: currentTaskDataForAI.title || '',
-              description: currentTaskDataForAI.description || '',
-              dueDate: currentTaskDataForAI.dueDate,
-              dependentTaskTitles: currentTaskDataForAI.dependentTaskTitles,
-            }}
-            onSuggestion={handleAISuggestion}
           />
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
@@ -140,5 +111,3 @@ export function EditTaskDialog({
     </Dialog>
   );
 }
-
-    

@@ -16,6 +16,7 @@ import type { UseFormReturn } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { AIRewriteDescriptionButton } from './AIRewriteDescriptionButton';
 
 export interface TaskFormData {
   title: string;
@@ -29,7 +30,7 @@ export interface TaskFormData {
 
 interface TaskFormFieldsProps {
   form: UseFormReturn<TaskFormData>; 
-  assignableUsers: UserProfile[]; // Changed from 'users'
+  assignableUsers: UserProfile[];
   allTasksForDependencies: Pick<Task, 'id' | 'title'>[]; 
   isEditing?: boolean;
 }
@@ -39,6 +40,8 @@ export function TaskFormFields({ form, assignableUsers, allTasksForDependencies,
 
   const selectedAssignees = watch('assigneeUids') || [];
   const selectedDependencies = watch('dependentTaskTitles') || [];
+  const currentTitle = watch('title');
+  const currentDescription = watch('description');
 
   return (
     <div className="grid gap-4 py-4">
@@ -50,6 +53,11 @@ export function TaskFormFields({ form, assignableUsers, allTasksForDependencies,
       <div className="space-y-1">
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" {...register('description')} placeholder="Provide a detailed description of the task..." />
+        <AIRewriteDescriptionButton
+            taskTitle={currentTitle || ''}
+            currentDescription={currentDescription || ''}
+            onDescriptionRewrite={(newDescription) => setValue('description', newDescription)}
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
@@ -156,7 +164,7 @@ export function TaskFormFields({ form, assignableUsers, allTasksForDependencies,
         />
       </div>
        <div className="space-y-1">
-        <Label>Dependent Tasks (for AI)</Label>
+        <Label>Dependent Tasks (Context for AI)</Label>
         <Controller
             name="dependentTaskTitles"
             control={control}
@@ -208,5 +216,3 @@ export function TaskFormFields({ form, assignableUsers, allTasksForDependencies,
     </div>
   );
 }
-
-    
