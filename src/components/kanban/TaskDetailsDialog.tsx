@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription, // Added import
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -72,7 +73,7 @@ export function TaskDetailsDialog({
         toast({ variant: "destructive", title: "Empty Comment", description: "Cannot add an empty comment."});
         return;
     }
-    if (!userProfile || authLoading) {
+    if (authLoading || !userProfile) { // Simplified check
         toast({ variant: "destructive", title: "Profile Issue", description: "User profile not available to add comment."});
         return;
     }
@@ -107,23 +108,19 @@ export function TaskDetailsDialog({
   const dueDateStatusText = getDueDateStatusText();
 
   let commentButtonText = "Add Comment";
-  let commentButtonDisabled = false;
   let inputsDisabled = false;
 
   if (authLoading) {
     commentButtonText = "Loading Auth...";
-    commentButtonDisabled = true;
     inputsDisabled = true;
   } else if (!userProfile) {
     commentButtonText = "Profile Unavailable";
-    commentButtonDisabled = true;
     inputsDisabled = true;
   } else if (isSubmittingComment) {
     commentButtonText = "Adding...";
-    commentButtonDisabled = true;
     inputsDisabled = true;
   } else if (newComment.trim() === '') {
-    commentButtonDisabled = true;
+    // Button text remains "Add Comment", but it will be disabled by logic below
   }
 
 
@@ -135,15 +132,16 @@ export function TaskDetailsDialog({
             <DialogTitle className="text-2xl font-bold text-foreground">{task.title}</DialogTitle>
             {canManageTask && (
                 <div className="flex space-x-2">
-                    <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment}>
+                    <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment || inputsDisabled}>
                         <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id);}} aria-label="Delete task" disabled={isSubmittingComment}>
+                    <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id);}} aria-label="Delete task" disabled={isSubmittingComment || inputsDisabled}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
             )}
           </div>
+          <DialogDescription>View and manage task details, including comments and assignees.</DialogDescription> {/* Added Description */}
           <div className="flex items-center space-x-3 mt-1">
             {task.priority !== 'NONE' && (
                 <Badge variant={getPriorityBadgeVariant(task.priority)} className={`w-fit ${task.priority === 'MEDIUM' ? 'bg-accent text-accent-foreground' : ''}`}>
@@ -259,7 +257,7 @@ export function TaskDetailsDialog({
                 />
                 <Button 
                     onClick={handleAddCommentSubmit} 
-                    disabled={commentButtonDisabled}
+                    disabled={inputsDisabled || newComment.trim() === '' || isSubmittingComment}
                     className="w-full sm:w-auto"
                 >
                     {isSubmittingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -271,3 +269,5 @@ export function TaskDetailsDialog({
     </Dialog>
   );
 }
+
+
