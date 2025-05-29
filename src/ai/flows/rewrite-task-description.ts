@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent to rewrite task descriptions.
@@ -10,13 +11,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const RewriteTaskDescriptionInputSchema = z.object({
+const RewriteTaskDescriptionInputSchema = z.object({
   taskTitle: z.string().describe('The title of the task.'),
   currentDescription: z.string().describe('The current description of the task.'),
 });
 export type RewriteTaskDescriptionInput = z.infer<typeof RewriteTaskDescriptionInputSchema>;
 
-export const RewriteTaskDescriptionOutputSchema = z.object({
+const RewriteTaskDescriptionOutputSchema = z.object({
   rewrittenDescription: z.string().describe('The rewritten task description.'),
 });
 export type RewriteTaskDescriptionOutput = z.infer<typeof RewriteTaskDescriptionOutputSchema>;

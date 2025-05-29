@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent to rewrite comments for tasks.
@@ -10,13 +11,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const RewriteCommentInputSchema = z.object({
+const RewriteCommentInputSchema = z.object({
   taskTitle: z.string().describe('The title of the task the comment belongs to.'),
   currentCommentText: z.string().describe('The current text of the comment.'),
 });
 export type RewriteCommentInput = z.infer<typeof RewriteCommentInputSchema>;
 
-export const RewriteCommentOutputSchema = z.object({
+const RewriteCommentOutputSchema = z.object({
   rewrittenComment: z.string().describe('The rewritten comment text.'),
 });
 export type RewriteCommentOutput = z.infer<typeof RewriteCommentOutputSchema>;
