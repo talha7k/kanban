@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function TeamsPage() {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, loading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -36,16 +36,18 @@ export default function TeamsPage() {
       setIsLoading(false);
       return;
     }
-    if (teams.length === 0) {
-      setIsLoading(true);
-    }
+    
+    setIsLoading(true);
+    
     try {
       const userTeams = await getTeamsForUser(currentUser.uid);
+
       const teamsWithMembers = await Promise.all(userTeams.map(async (team) => {
         const fullTeam = await getTeam(team.id);
         return fullTeam || team;
       }));
       setTeams(teamsWithMembers);
+
     } catch (error) {
       console.error('Error fetching teams:', error);
       toast({
@@ -59,8 +61,12 @@ export default function TeamsPage() {
   }, [currentUser?.uid, toast]);
 
   useEffect(() => {
-    fetchTeams();
-  }, [fetchTeams]);
+    if (!loading && currentUser) {
+      fetchTeams();
+    } else if (!loading && !currentUser) {
+      setIsLoading(false);
+    }
+  }, [currentUser?.uid, loading]); // Removed fetchTeams from dependencies to prevent duplicate calls
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {

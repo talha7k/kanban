@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getTeam, updateTeam, addMemberToTeam } from '@/lib/firebaseTeam';
+import { getTeam, updateTeam, addMemberToTeam, removeMemberFromTeam, deleteTeam } from '@/lib/firebaseTeam';
 import { getUserProfileByEmail } from '@/lib/firebaseUser';
 import type { Team, UserId } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, UserPlus, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, Trash2, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useParams } from 'next/navigation';
 
@@ -30,6 +30,8 @@ export default function TeamDetailPage() {
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [memberEmail, setMemberEmail] = useState('');
   const [isAddingMember, setIsAddingMember] = useState(false);
+  const [isDeleteTeamDialogOpen, setIsDeleteTeamDialogOpen] = useState(false);
+  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
 
   const fetchTeamDetails = useCallback(async () => {
     if (!teamId || !currentUser?.uid) return;
@@ -92,6 +94,43 @@ export default function TeamDetailPage() {
     }
   };
 
+  const handleRemoveMember = async (memberIdToRemove: UserId) => {
+    if (!team || !currentUser) return;
+    
+    // Prevent users from removing themselves
+    if (memberIdToRemove === currentUser.uid) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot Remove Yourself',
+        description: 'You cannot remove yourself from the team. Use the delete team option if you want to delete the entire team.',
+      });
+      return;
+    }
+    
+    // Optimistically remove the member from the UI
+    setTeam((prev: Team | null) =>
+      prev ? { ...prev, memberIds: prev.memberIds.filter((id) => id !== memberIdToRemove) } : null
+    );
+    try {
+      await removeMemberFromTeam(team.id, memberIdToRemove);
+      toast({
+        title: 'Member Removed!',
+        description: 'Member has been successfully removed from the team.',
+      });
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Remove Member Failed',
+        description: 'Could not remove member from team.',
+      });
+      // Revert UI on error
+      setTeam((prev: Team | null) =>
+        prev ? { ...prev, memberIds: [...prev.memberIds, memberIdToRemove] } : null
+      );
+    }
+  };
+
   const handleAddMember = async () => {
     if (!team || !memberEmail.trim()) return;
     setIsAddingMember(true);
@@ -125,6 +164,29 @@ export default function TeamDetailPage() {
     }
   };
 
+  const handleDeleteTeam = async () => {
+    if (!team || !currentUser) return;
+    setIsDeletingTeam(true);
+    try {
+      await deleteTeam(team.id);
+      toast({
+        title: 'Team Deleted!',
+        description: 'Team has been successfully deleted.',
+      });
+      router.push('/teams'); // Redirect to teams page
+    } catch (error) {
+      console.error('Error deleting team:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Delete Team Failed',
+        description: 'Could not delete team.',
+      });
+    } finally {
+      setIsDeletingTeam(false);
+      setIsDeleteTeamDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -150,9 +212,17 @@ export default function TeamDetailPage() {
           <Button onClick={() => setIsEditTeamDialogOpen(true)} className="mr-2">
             Edit Team
           </Button>
-          <Button onClick={() => setIsAddMemberDialogOpen(true)}>
+          <Button onClick={() => setIsAddMemberDialogOpen(true)} className="mr-2">
             <UserPlus className="mr-2 h-4 w-4" /> Add Member
           </Button>
+          {team.ownerId === currentUser?.uid && (
+            <Button 
+              variant="destructive" 
+              onClick={() => setIsDeleteTeamDialogOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Delete Team
+            </Button>
+          )}
         </div>
       </div>
 
@@ -179,9 +249,11 @@ export default function TeamDetailPage() {
               {team.memberIds.map((memberId) => (
                 <li key={memberId} className="flex justify-between items-center py-2 border-b last:border-b-0">
                   <span>{memberId}</span> {/* Replace with actual user name later */}
-                  {/* <Button variant="ghost" size="sm">
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button> */}
+                  {memberId !== currentUser?.uid && (
+                    <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(memberId)}>
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -263,6 +335,36 @@ export default function TeamDetailPage() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Add Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Team Dialog */}
+      <Dialog open={isDeleteTeamDialogOpen} onOpenChange={setIsDeleteTeamDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Team
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete the team "{team?.name}"? This action cannot be undone and will remove all team data.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteTeamDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteTeam} disabled={isDeletingTeam}>
+              {isDeletingTeam ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Delete Team
             </Button>
           </DialogFooter>
         </DialogContent>

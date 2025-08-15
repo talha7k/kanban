@@ -1,5 +1,6 @@
-import { doc, addDoc, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
+import { auth } from './firebase';
 import type { Team, UserId, UserProfile } from './types';
 
 export async function createTeam(teamName: string, creatorId: UserId, teamDescription: string): Promise<Team> {
@@ -82,13 +83,44 @@ export const removeMemberFromTeam = async (teamId: string, userId: UserId) => {
   }
 }
 
+export const deleteTeam = async (teamId: string): Promise<void> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('User must be authenticated to delete teams.');
+  }
+
+  const teamRef = doc(db, 'teams', teamId);
+  const teamSnap = await getDoc(teamRef);
+
+  if (!teamSnap.exists()) {
+    throw new Error('Team not found.');
+  }
+
+  const teamData = teamSnap.data() as Team;
+  if (teamData.ownerId !== currentUser.uid) {
+    throw new Error('Only the team owner can delete the team.');
+  }
+
+  try {
+    await deleteDoc(teamRef);
+  } catch (error) {
+    console.error(`Error deleting team ${teamId}:`, error);
+    throw error;
+  }
+};
+
 export const getTeamMembers = async (teamId: string): Promise<UserProfile[]> => {
   try {
-    const team = await getTeam(teamId);
-    if (!team) {
+    // Get team data directly without calling getTeam to avoid circular dependency
+    const teamRef = doc(db, 'teams', teamId);
+    const teamSnap = await getDoc(teamRef);
+    
+    if (!teamSnap.exists()) {
       return [];
     }
-    const memberIds = team.memberIds || [];
+    
+    const teamData = teamSnap.data();
+    const memberIds = teamData?.memberIds || [];
     if (memberIds.length === 0) {
       return [];
     }

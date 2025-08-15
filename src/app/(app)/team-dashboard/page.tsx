@@ -132,7 +132,7 @@ export default function DashboardPage() {
       setIsLoadingUsers(false);
     }
 
-
+    // Fetch projects
     try {
       const userProjects = await getProjectsForUser(currentUser.uid, selectedTeamId);
       setProjects(userProjects);
@@ -157,20 +157,6 @@ export default function DashboardPage() {
       });
     } finally {
       setIsLoadingProjects(false);
-    }
-
-    try {
-      const fetchedUsers = await getTeamMembers(selectedTeamId);
-      setAllUsers(fetchedUsers);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Could not load users.",
-      });
-    } finally {
-      setIsLoadingUsers(false);
     }
   };
 
