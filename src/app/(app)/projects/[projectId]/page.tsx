@@ -12,11 +12,11 @@ import { Loader2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { EditProjectDialog } from '@/components/project/EditProjectDialog'; 
-
-export default function ProjectPage({ params }: { params: { projectId: string } }) {
+import { useParams } from 'next/navigation';
+export default function ProjectPage() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  
+  const {projectId} = useParams();
   const [project, setProject] = useState<Project | null>(null); 
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
@@ -26,7 +26,8 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
 
   useEffect(() => {
-    const projectId = params.projectId; // Capture projectId for stable dependency
+
+
     if (projectId && currentUser) { 
       const fetchProjectData = async () => {
         setIsLoadingProject(true);
@@ -34,7 +35,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         setError(null);
         try {
           const [fetchedProject, fetchedUsers] = await Promise.all([
-            getProjectById(projectId),
+            getProjectById(projectId as string),
             getAllUserProfiles()
           ]);
 
@@ -69,7 +70,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         setIsLoadingProject(false);
         setIsLoadingUsers(false);
     }
-  }, [params.projectId, currentUser, toast]); // Keep params.projectId as dependency
+  }, [projectId, currentUser, toast]); // Keep params.projectId as dependency
 
   const handleEditProjectSubmit = async (data: { name: string; description?: string; teamId?: string | null }) => {
     if (!project || !currentUser || currentUser.uid !== project.ownerId) {

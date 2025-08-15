@@ -53,7 +53,7 @@ export function AppHeader() {
         </nav>
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="icon" asChild>
-            <a href="https://github.com/firebase/genkit/tree/main/firebase-studio/next-js-kanban" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/talha7k/kanban" target="_blank" rel="noopener noreferrer">
               <Github className="h-5 w-5" />
               <span className="sr-only">GitHub</span>
             </a>
