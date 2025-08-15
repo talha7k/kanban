@@ -29,8 +29,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  } from "@/lib/firebaseService";
 import { getProjectsForUser } from "@/lib/firebaseProject";
 import { deleteProject as deleteProjectFromDb } from "@/lib/firebaseProject";
 import { updateProjectDetails } from "@/lib/firebaseProject";
@@ -308,6 +306,16 @@ export default function DashboardPage() {
       await fetchDashboardData();
     }
   };
+
+  // Show loading while checking for selectedTeamId
+  if (isLoadingTeamId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-2">Loading dashboard...</p>
+      </div>
+    );
+  }
 
   if (!selectedTeamId) {
     return (
