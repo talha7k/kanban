@@ -14,9 +14,7 @@ import {
 import type { NewProjectData, Project, UserProfile } from "@/lib/types";
 import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
 import { ManageProjectMembersDialog } from "@/components/dashboard/ManageProjectMembersDialog";
-import {
-  PlusCircle,
-  Users,
+import { PlusCircle,
   FolderKanban,
   Loader2,
   Briefcase,
@@ -24,8 +22,7 @@ import {
   Eye,
   Crown,
   Pencil,
-  Trash2,
-} from "lucide-react";
+  Trash2, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
@@ -362,7 +359,15 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold">{selectedTeam?.name ? `${selectedTeam.name} Dashboard` : "Team Dashboard"}</h1>
+        <div className="flex items-center justify-between w-full">
+          <h1 className="text-3xl font-bold">{selectedTeam?.name || 'Dashboard'}</h1>
+          <Link href="/teams">
+            <Button variant="outline">
+              <Users className="mr-2 h-4 w-4" />
+              Back to Teams
+            </Button>
+          </Link>
+        </div>
         {currentUser && (
           <Button
             onClick={() => setIsCreateProjectDialogOpen(true)}

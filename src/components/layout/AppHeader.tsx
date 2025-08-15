@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { KanbanIcon } from '@/components/icons/KanbanIcon';
 import { Button } from '@/components/ui/button';
-import { Github, LayoutDashboard, LogOut, UserCircle, LogIn, Settings } from 'lucide-react';
+import { Github, LayoutDashboard, LogOut, UserCircle, LogIn, Settings, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -44,9 +44,9 @@ export function AppHeader() {
         <nav className="flex flex-1 items-center space-x-4">
           {currentUser && (
             <Button variant="ghost" asChild>
-              <Link href="/teams-dashboard">
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Dashboard
+              <Link href="/teams">
+                <Users className="mr-2 h-4 w-4" />
+                Teams
               </Link>
             </Button>
           )}
