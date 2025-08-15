@@ -43,6 +43,7 @@ export interface Team {
   description?: string;
   ownerId: UserId;
   memberIds: UserId[];
+  members?: UserProfile[]; // Optional: populated when fetching team details with member profiles
   createdAt: string;
   updatedAt: string;
   createdBy: UserId; // User who created the team

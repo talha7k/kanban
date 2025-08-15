@@ -1,7 +1,7 @@
-import { getFirestore, collection, addDoc, getDocs, query, where, arrayUnion, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, addDoc, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import type { Team, UserId, UserProfile } from './types';
 
 const db = getFirestore();
-import type { Team, UserId } from './types';
 
 export async function createTeam(teamName: string, creatorId: UserId, teamDescription: string): Promise<Team> {
   try {
@@ -43,7 +43,12 @@ export const getTeam = async (teamId: string): Promise<Team | null> => {
   const teamSnap = await getDoc(teamRef);
 
   if (teamSnap.exists()) {
-    return { id: teamSnap.id, ...teamSnap.data() } as Team;
+    const teamData = { id: teamSnap.id, ...teamSnap.data() } as Team;
+    if (teamData.memberIds && teamData.memberIds.length > 0) {
+      const members = await getTeamMembers(teamId);
+      teamData.members = members;
+    }
+    return teamData;
   } else {
     return null;
   }
@@ -65,3 +70,40 @@ export const addMemberToTeam = async (teamId: string, userId: UserId) => {
     throw new Error('Failed to add member to team.');
   }
 }
+
+export const removeMemberFromTeam = async (teamId: string, userId: UserId) => {
+  try {
+    const teamRef = doc(db, 'teams', teamId);
+    await updateDoc(teamRef, {
+      memberIds: arrayRemove(userId)
+    });
+  } catch (error) {
+    console.error('Error removing member from team:', error);
+    throw new Error('Failed to remove member from team.');
+  }
+}
+
+export const getTeamMembers = async (teamId: string): Promise<UserProfile[]> => {
+  try {
+    const team = await getTeam(teamId);
+    if (!team) {
+      return [];
+    }
+    const memberIds = team.memberIds || [];
+    if (memberIds.length === 0) {
+      return [];
+    }
+
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('uid', 'in', memberIds));
+    const querySnapshot = await getDocs(q);
+    const members: UserProfile[] = [];
+    querySnapshot.forEach((doc) => {
+      members.push({ id: doc.id, ...doc.data() } as UserProfile);
+    });
+    return members;
+  } catch (error) {
+    console.error('Error fetching team members:', error);
+    throw new Error('Failed to fetch team members.');
+  }
+};

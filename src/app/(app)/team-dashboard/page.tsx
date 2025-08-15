@@ -30,10 +30,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { getProjectsForUser } from "@/lib/firebaseProject";
-import { deleteProject as deleteProjectFromDb } from "@/lib/firebaseProject";
+
+
+ import { deleteProject as deleteProjectFromDb } from "@/lib/firebaseProject";
 import { updateProjectDetails } from "@/lib/firebaseProject";
  import { createProject as createProjectInDb } from "@/lib/firebaseProject";
-import { getAllUserProfiles } from "@/lib/firebaseUser";
+import { getTeamMembers, getTeam } from "@/lib/firebaseTeam";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +76,7 @@ export default function DashboardPage() {
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<TeamId | null>(null);
   const [isLoadingTeamId, setIsLoadingTeamId] = useState(true);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 
   // Load selected team from localStorage on mount
   useEffect(() => {
@@ -103,6 +106,36 @@ export default function DashboardPage() {
     if (!currentUser?.uid || !selectedTeamId) return; // Ensure team is selected
     setIsLoadingProjects(true);
     setIsLoadingUsers(true);
+
+    // Fetch team details
+    try {
+      const team = await getTeam(selectedTeamId);
+      setSelectedTeam(team);
+    } catch (error) {
+      console.error("Error fetching team details:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not load team details.",
+      });
+    }
+
+    // Fetch team members
+    try {
+      const fetchedUsers = await getTeamMembers(selectedTeamId);
+      setAllUsers(fetchedUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not load users.",
+      });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+
+
     try {
       const userProjects = await getProjectsForUser(currentUser.uid, selectedTeamId);
       setProjects(userProjects);
@@ -130,7 +163,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const fetchedUsers = await getAllUserProfiles();
+      const fetchedUsers = await getTeamMembers(selectedTeamId);
       setAllUsers(fetchedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -329,7 +362,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+        <h1 className="text-3xl font-bold">{selectedTeam?.name ? `${selectedTeam.name} Dashboard` : "Team Dashboard"}</h1>
         {currentUser && (
           <Button
             onClick={() => setIsCreateProjectDialogOpen(true)}

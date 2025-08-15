@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getTeamsForUser, createTeam } from '@/lib/firebaseTeam';
+import { getTeamsForUser, createTeam, getTeam } from '@/lib/firebaseTeam';
 import type { Team, UserId } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,11 @@ export default function TeamsPage() {
     setIsLoading(true);
     try {
       const userTeams = await getTeamsForUser(currentUser.uid);
-      setTeams(userTeams);
+      const teamsWithMembers = await Promise.all(userTeams.map(async (team) => {
+        const fullTeam = await getTeam(team.id);
+        return fullTeam || team;
+      }));
+      setTeams(teamsWithMembers);
     } catch (error) {
       console.error('Error fetching teams:', error);
       toast({
@@ -146,12 +150,23 @@ export default function TeamsPage() {
                 )}
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center p-4">
-                <p className="text-sm text-gray-500 mb-3">{team.memberIds.length} Members</p>
+                <div className="mb-3">
+                  <h4 className="text-sm font-semibold">Members:</h4>
+                  <ul className="list-disc list-inside text-sm text-gray-700">
+                    {team.members && team.members.length > 0 ? (
+                      team.members.map(member => (
+                        <li key={member.id}>{member.name} ({member.email})</li>
+                      ))
+                    ) : (
+                      <li>No members found.</li>
+                    )}
+                  </ul>
+                </div>
                 <div className="flex gap-2 w-full">
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => router.push(`/teams/${team.id}`)}
+                    onClick={() => router.push(`/teams/${team.id}/manage`)}
                   >
                     Manage Team
                   </Button>
