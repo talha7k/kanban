@@ -134,7 +134,7 @@ export function EditProjectDialog({
             )}
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-project-team">Team (Optional)</Label>
+            <Label htmlFor="edit-project-team">Team</Label>
             <Select
               onValueChange={(value) => form.setValue("teamId", value === "null" ? null : value)}
               value={form.watch("teamId") || "null"}
@@ -144,7 +144,6 @@ export function EditProjectDialog({
                 <SelectValue placeholder="Select a team" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="null">No Team</SelectItem>
                 {teams.map((team) => (
                   <SelectItem key={team.id} value={team.id}>
                     {team.name}
