@@ -38,7 +38,7 @@ export default function SignupPage() {
   
   useEffect(() => {
     if (currentUser) {
-      router.push('/dashboard'); // Redirect if already logged in
+      router.push('/teams'); // Redirect if already logged in
     }
   }, [currentUser, router]);
 

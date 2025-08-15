@@ -34,7 +34,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (currentUser) {
-      router.push('/dashboard'); // Redirect if already logged in
+      router.push('/teams'); // Redirect if already logged in
     }
   }, [currentUser, router]);
 
@@ -47,8 +47,8 @@ export default function LoginPage() {
     setFormError(null);
     try {
       await login(data.email, data.password);
-      toast({ title: "Login Successful!", description: "Redirecting to dashboard..." });
-      // router.push('/dashboard'); // Handled by useEffect now
+      toast({ title: "Login Successful!", description: "Redirecting to teams..." });
+      // router.push('/teams'); // Handled by useEffect now
     } catch (error: any) {
       const errorMessage = error.message || "Failed to login. Please check your credentials.";
       setFormError(errorMessage);

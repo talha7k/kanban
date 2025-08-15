@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +23,7 @@ export default function TeamsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateTeamDialogOpen, setIsCreateTeamDialogOpen] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamDescription, setNewTeamDescription] = useState('');
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
 
   const fetchTeams = useCallback(async () => {
@@ -65,9 +68,10 @@ export default function TeamsPage() {
 
     setIsCreatingTeam(true);
     try {
-      const newTeam = await createTeam(newTeamName, currentUser.uid);
+      const newTeam = await createTeam(newTeamName, currentUser.uid, newTeamDescription);
       setTeams((prevTeams) => [...prevTeams, newTeam]);
       setNewTeamName('');
+      setNewTeamDescription('');
       setIsCreateTeamDialogOpen(false);
       toast({
         title: 'Team Created!',
@@ -87,9 +91,28 @@ export default function TeamsPage() {
   };
 
   const handleSelectTeam = async (teamId: string) => {
-    // Store the selected team in local storage
-    localStorage.setItem('selectedTeamId', teamId);
-    router.push(`/team-dashboard?teamId=${teamId}`);
+    try {
+      // Store the selected team in local storage
+      localStorage.setItem('selectedTeamId', teamId);
+      
+      // Add a small delay to ensure localStorage is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to team dashboard
+      router.push('/team-dashboard');
+      
+      toast({
+        title: 'Team Selected',
+        description: 'Navigating to team dashboard...',
+      });
+    } catch (error) {
+      console.error('Error selecting team:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not select team.',
+      });
+    }
   };
 
   if (isLoading) {
@@ -115,21 +138,31 @@ export default function TeamsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {teams.map((team) => (
-            <Card key={team.id}>
+            <Card key={team.id} className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle>{team.name}</CardTitle>
+                {team.description && (
+                  <p className="text-sm text-muted-foreground">{team.description}</p>
+                )}
               </CardHeader>
-<CardContent className="flex flex-col items-center justify-center p-4">
-              <h3 className="text-lg font-semibold">{team.name}</h3>
-              <p className="text-sm text-gray-500">{team.memberIds.length} Members</p>
-              <Button
-                variant="outline"
-                className="mt-2"
-                onClick={() => handleSelectTeam(team.id)}
-              >
-                View Details
-              </Button>
-            </CardContent>
+              <CardContent className="flex flex-col items-center justify-center p-4">
+                <p className="text-sm text-gray-500 mb-3">{team.memberIds.length} Members</p>
+                <div className="flex gap-2 w-full">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => router.push(`/teams/${team.id}`)}
+                  >
+                    Manage Team
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => handleSelectTeam(team.id)}
+                  >
+                    Select Team
+                  </Button>
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>

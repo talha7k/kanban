@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'DijiKanban - Project Management',
 description: 'Project management application by DijiKanban for small teams.',
   icons: {
-    icon: '/favicon.ico',
+    icon: 'favicon.ico',
   },
 };
 

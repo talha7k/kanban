@@ -75,13 +75,30 @@ export default function DashboardPage() {
   const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<TeamId | null>(null);
+  const [isLoadingTeamId, setIsLoadingTeamId] = useState(true);
+
+  // Load selected team from localStorage on mount
+  useEffect(() => {
+    const loadTeamId = () => {
+      const storedTeamId = localStorage.getItem('selectedTeamId');
+      if (storedTeamId) {
+        setSelectedTeamId(storedTeamId as TeamId);
+      }
+      setIsLoadingTeamId(false);
+    };
+    
+    // Add a small delay to ensure localStorage is available
+    setTimeout(loadTeamId, 50);
+  }, []);
 
   const handleTeamSelected = useCallback((teamId: TeamId) => {
     setSelectedTeamId(teamId);
+    localStorage.setItem('selectedTeamId', teamId);
   }, []);
 
   const handleTeamCreated = useCallback((teamId: TeamId) => {
     setSelectedTeamId(teamId);
+    localStorage.setItem('selectedTeamId', teamId);
   }, []);
 
   const fetchDashboardData = async () => {

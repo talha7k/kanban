@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,7 +32,7 @@ export default function TeamDetailPage() {
   const [isAddingMember, setIsAddingMember] = useState(false);
 
   const fetchTeamDetails = useCallback(async () => {
-    if (!teamId) return;
+    if (!teamId || !currentUser?.uid) return;
     setIsLoading(true);
     try {
       const fetchedTeam = await getTeam(teamId as string);
@@ -49,11 +51,23 @@ export default function TeamDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [teamId, toast]);
+  }, [teamId, currentUser?.uid, toast]);
 
   useEffect(() => {
-    fetchTeamDetails();
-  }, [fetchTeamDetails]);
+    if (currentUser?.uid) {
+      fetchTeamDetails();
+    }
+  }, [fetchTeamDetails, currentUser?.uid]);
+
+  // Authentication guard
+  if (!currentUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-2">Loading...</p>
+      </div>
+    );
+  }
 
   const handleUpdateTeam = async () => {
     if (!team || !currentUser) return;

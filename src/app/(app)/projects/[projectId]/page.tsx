@@ -111,7 +111,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
           Try Reloading
         </Button>
-         <Link href="/dashboard" passHref>
+         <Link href="/team-dashboard" passHref>
             <Button variant="link" className="mt-2">Go to Dashboard</Button>
         </Link>
       </div>
@@ -122,7 +122,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
      return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
         <p className="text-lg">Project not found or you do not have access.</p>
-         <Link href="/dashboard" passHref>
+         <Link href="/team-dashboard" passHref>
             <Button variant="link" className="mt-2">Go to Dashboard</Button>
         </Link>
       </div>
@@ -150,7 +150,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
                         <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
                     )}
                 </div>
-                <Link href="/dashboard">
+                <Link href="/team-dashboard">
                     <Button variant="outline">Back to Dashboard</Button>
                 </Link>
             </div>

@@ -36,6 +36,16 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
     }
   }, [currentUser, loading, router]);
 
+  // Handle team selection navigation
+  useEffect(() => {
+    if (!loading && !teamLoading && currentUser && !selectedTeamId) {
+      // Only redirect to teams if we're not already on the teams page
+      if (window.location.pathname !== '/teams') {
+        router.push('/teams');
+      }
+    }
+  }, [currentUser, loading, teamLoading, selectedTeamId, router]);
+
   const handleTeamSelected = async (teamId: TeamId) => {
     setSelectedTeamId(teamId);
     localStorage.setItem('selectedTeamId', teamId);
@@ -63,9 +73,10 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
     return null; // Or a minimal loading/redirecting state, router.push handles it
   }
 
-  if (!selectedTeamId) {
-    router.push('/teams');
-    return null; // Or a loading indicator while redirecting
+  // Allow teams page to render even without selectedTeamId
+  const isTeamsPage = typeof window !== 'undefined' && window.location.pathname === '/teams';
+  if (!selectedTeamId && !isTeamsPage) {
+    return null; // Navigation handled by useEffect
   }
 
   return (

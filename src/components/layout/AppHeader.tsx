@@ -44,7 +44,7 @@ export function AppHeader() {
         <nav className="flex flex-1 items-center space-x-4">
           {currentUser && (
             <Button variant="ghost" asChild>
-              <Link href="/dashboard">
+              <Link href="/teams-dashboard">
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 Dashboard
               </Link>
