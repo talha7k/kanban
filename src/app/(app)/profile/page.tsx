@@ -11,7 +11,7 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { updateUserProfile } from '@/lib/firebaseService';
+import { updateUserProfile } from '@/lib/firebaseUser';
 import { Loader2, UserCog } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 

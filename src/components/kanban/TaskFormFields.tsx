@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Users, Tag, Check, ChevronsUpDown } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -34,8 +34,8 @@ interface TaskFormFieldsProps {
   isEditing?: boolean;
 }
 
-export function TaskFormFields({ form, assignableUsers, allTasksForDependencies, isEditing = false }: TaskFormFieldsProps) {
-  const { register, control, watch, setValue } = form;
+export function TaskFormFields({ form, assignableUsers, allTasksForDependencies }: TaskFormFieldsProps) {
+  const { register, control, watch } = form;
 
   const selectedAssignees = watch('assigneeUids') || [];
   const selectedDependencies = watch('dependentTaskTitles') || [];

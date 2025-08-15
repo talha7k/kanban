@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,16 +30,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  getProjectsForUser,
-  getAllUserProfiles,
-  createProject as createProjectInDb,
-  updateProjectDetails,
-  deleteProject as deleteProjectFromDb,
-} from "@/lib/firebaseService";
+  } from "@/lib/firebaseService";
+import { getProjectsForUser } from "@/lib/firebaseProject";
+import { deleteProject as deleteProjectFromDb } from "@/lib/firebaseProject";
+import { updateProjectDetails } from "@/lib/firebaseProject";
+ import { createProject as createProjectInDb } from "@/lib/firebaseProject";
+import { getAllUserProfiles } from "@/lib/firebaseUser";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EditProjectDialog } from "@/components/project/EditProjectDialog";
+
+
+import { TeamId, Team } from '@/lib/types';
+import TeamSelection from '@/components/teams/TeamSelection';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,18 +74,27 @@ export default function DashboardPage() {
   const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
   const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<TeamId | null>(null);
+
+  const handleTeamSelected = useCallback((teamId: TeamId) => {
+    setSelectedTeamId(teamId);
+  }, []);
+
+  const handleTeamCreated = useCallback((teamId: TeamId) => {
+    setSelectedTeamId(teamId);
+  }, []);
 
   const fetchDashboardData = async () => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid || !selectedTeamId) return; // Ensure team is selected
     setIsLoadingProjects(true);
     setIsLoadingUsers(true);
     try {
-      const userProjects = await getProjectsForUser(currentUser.uid);
+      const userProjects = await getProjectsForUser(currentUser.uid, selectedTeamId);
       setProjects(userProjects);
 
       if (selectedProjectForMembers) {
         const updatedSelectedProject = userProjects.find(
-          (p) => p.id === selectedProjectForMembers.id
+          (p: Project) => p.id === selectedProjectForMembers.id
         );
         if (updatedSelectedProject) {
           setSelectedProjectForMembers(updatedSelectedProject);
@@ -117,10 +130,10 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    if (currentUser?.uid) {
+    if (currentUser?.uid && selectedTeamId) {
       fetchDashboardData();
     }
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, selectedTeamId]);
 
   const handleAddProject = async (projectData: NewProjectData) => {
     if (!currentUser?.uid) {
@@ -131,8 +144,16 @@ export default function DashboardPage() {
       });
       return;
     }
+    if (!selectedTeamId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select a team before creating a project.",
+      });
+      return;
+    }
     try {
-      const newProject = await createProjectInDb(projectData, currentUser.uid);
+      const newProject = await createProjectInDb(projectData, currentUser.uid, selectedTeamId);
 
       setProjects((prevProjects) =>
         [newProject, ...prevProjects].sort(
@@ -164,6 +185,7 @@ export default function DashboardPage() {
   const handleEditProjectSubmit = async (data: {
     name: string;
     description?: string;
+    teamId?: TeamId | null;
   }) => {
     if (
       !projectToEdit ||
@@ -269,6 +291,15 @@ export default function DashboardPage() {
       await fetchDashboardData();
     }
   };
+
+  if (!selectedTeamId) {
+    return (
+      <TeamSelection
+        onTeamSelected={handleTeamSelected}
+        onTeamCreated={handleTeamCreated}
+      />
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6">

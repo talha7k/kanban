@@ -75,7 +75,7 @@ export function KanbanColumn({
         ))}
         {columnTasks.length === 0 && (
            <div className="text-center text-sm text-muted-foreground py-4 border-2 border-dashed border-border rounded-md">
-            Drag tasks here or click "Add Task"
+            Drag tasks here or click &quot;Add Task&quot;
           </div>
         )}
       </div>

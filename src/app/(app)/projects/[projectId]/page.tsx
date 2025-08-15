@@ -3,7 +3,9 @@
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import type { Project, UserProfile } from '@/lib/types';
 import { useEffect, useState } from 'react';
-import { getProjectById, getAllUserProfiles, updateProjectDetails } from '@/lib/firebaseService'; 
+import { getAllUserProfiles } from '@/lib/firebaseUser';
+import { getProjectById } from '@/lib/firebaseProject';
+import { updateProjectDetails } from '@/lib/firebaseProject'; 
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Settings } from 'lucide-react'; 
@@ -69,7 +71,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     }
   }, [params.projectId, currentUser, toast]); // Keep params.projectId as dependency
 
-  const handleEditProjectSubmit = async (data: { name: string; description?: string }) => {
+  const handleEditProjectSubmit = async (data: { name: string; description?: string; teamId?: string | null }) => {
     if (!project || !currentUser || currentUser.uid !== project.ownerId) {
       toast({ variant: "destructive", title: "Permission Denied", description: "Only the project owner can edit details."});
       return;

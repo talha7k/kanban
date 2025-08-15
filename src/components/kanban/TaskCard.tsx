@@ -87,7 +87,7 @@ export function TaskCard({
       onDragStart={(e) => !isSubmitting && canMoveTask && onDragStart(e, task.id)}
       className={`mb-3 shadow-md hover:shadow-lg transition-shadow duration-200 bg-card ${isSubmitting ? 'opacity-70 cursor-not-allowed' : (canMoveTask ? 'cursor-grab active:cursor-grabbing' : 'cursor-default')}`}
       onClick={() => !isSubmitting && onViewDetails(task)}
-      aria-label={`Task: ${task.title}, Priority: ${task.priority}`}
+      aria-label={`Task: &quot;${task.title}&quot;, Priority: &quot;${task.priority}&quot;`}
     >
       <CardHeader className="p-4">
         <div className="flex justify-between items-start">

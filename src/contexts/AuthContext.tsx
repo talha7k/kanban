@@ -5,7 +5,7 @@ import type { User as FirebaseUser, AuthError } from 'firebase/auth';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
-import { createUserProfileDocument, getUserProfile } from '@/lib/firebaseService';
+import { createUserProfileDocument, getUserProfile } from '@/lib/firebaseUser';
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';

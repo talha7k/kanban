@@ -21,14 +21,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  addTaskToProject,
-  updateTaskInProject,
-  deleteTaskFromProject,
-  moveTaskInProject,
-  addCommentToTask,
-  getProjectById, // Import getProjectById
-} from '@/lib/firebaseService';
+import { getProjectById } from '@/lib/firebaseProject';
+ import {
+   addTaskToProject,
+   updateTaskInProject,
+   deleteTaskFromProject,
+   moveTaskInProject,
+   addCommentToTask,
+   updateCommentInTask,
+   deleteCommentFromTask
+ } from '@/lib/firebaseTask';
 import { useAuth } from '@/hooks/useAuth';
 
 
