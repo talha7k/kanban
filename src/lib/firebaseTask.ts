@@ -1,9 +1,7 @@
-import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
- import { auth } from './firebase';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import type { Task, NewTaskData, ColumnId, ProjectDocument, Comment, NewCommentData, TaskId } from './types';
 import { v4 as uuidv4 } from 'uuid';
-
-const db = getFirestore();
 
 // Task Functions
 export const addTaskToProject = async (projectId: string, taskData: NewTaskData, columnId: ColumnId): Promise<Task> => {

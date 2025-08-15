@@ -1,18 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { getTeamsForUser, createTeam, getTeam } from '@/lib/firebaseTeam';
-import type { Team, UserId } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Loader2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { getTeamsForUser, createTeam, getTeam } from "@/lib/firebaseTeam";
+import type { Team, UserId } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusCircle, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function TeamsPage() {
   const { currentUser, userProfile } = useAuth();
@@ -22,13 +27,18 @@ export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateTeamDialogOpen, setIsCreateTeamDialogOpen] = useState(false);
-  const [newTeamName, setNewTeamName] = useState('');
-  const [newTeamDescription, setNewTeamDescription] = useState('');
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamDescription, setNewTeamDescription] = useState("");
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
 
   const fetchTeams = useCallback(async () => {
-    if (!currentUser?.uid) return;
-    setIsLoading(true);
+    if (!currentUser?.uid) {
+      setIsLoading(false);
+      return;
+    }
+    if (teams.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const userTeams = await getTeamsForUser(currentUser.uid);
       const teamsWithMembers = await Promise.all(userTeams.map(async (team) => {
@@ -55,38 +65,43 @@ export default function TeamsPage() {
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Team name cannot be empty.',
+        variant: "destructive",
+        title: "Error",
+        description: "Team name cannot be empty.",
       });
       return;
     }
     if (!currentUser?.uid) {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'You must be logged in to create a team.',
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to create a team.",
       });
       return;
     }
 
     setIsCreatingTeam(true);
     try {
-      const newTeam = await createTeam(newTeamName, currentUser.uid, newTeamDescription);
+      const newTeam = await createTeam(
+        newTeamName,
+        currentUser.uid,
+        newTeamDescription
+      );
       setTeams((prevTeams) => [...prevTeams, newTeam]);
-      setNewTeamName('');
-      setNewTeamDescription('');
+      setNewTeamName("");
+      setNewTeamDescription("");
       setIsCreateTeamDialogOpen(false);
       toast({
-        title: 'Team Created!',
-        description: `Team "${newTeam.name}" has been successfully created.`, 
+        title: "Team Created!",
+        description: `Team "${newTeam.name}" has been successfully created.`,
       });
     } catch (error) {
-      console.error('Error creating team:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Could not create team.';
+      console.error("Error creating team:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Could not create team.";
       toast({
-        variant: 'destructive',
-        title: 'Creation Failed',
+        variant: "destructive",
+        title: "Creation Failed",
         description: errorMessage,
       });
     } finally {
@@ -97,29 +112,29 @@ export default function TeamsPage() {
   const handleSelectTeam = async (teamId: string) => {
     try {
       // Store the selected team in local storage
-      localStorage.setItem('selectedTeamId', teamId);
-      
+      localStorage.setItem("selectedTeamId", teamId);
+
       // Add a small delay to ensure localStorage is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Navigate to team dashboard
-      router.push('/team-dashboard');
-      
+      router.push("/team-dashboard");
+
       toast({
-        title: 'Team Selected',
-        description: 'Navigating to team dashboard...',
+        title: "Team Selected",
+        description: "Navigating to team dashboard...",
       });
     } catch (error) {
-      console.error('Error selecting team:', error);
+      console.error("Error selecting team:", error);
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not select team.',
+        variant: "destructive",
+        title: "Error",
+        description: "Could not select team.",
       });
     }
   };
 
-  if (isLoading) {
+  if (isLoading && teams.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -138,15 +153,22 @@ export default function TeamsPage() {
       </div>
 
       {teams.length === 0 ? (
-        <p className="text-center text-gray-500">No teams found. Create one to get started!</p>
+        <p className="text-center text-gray-500">
+          No teams found. Create one to get started!
+        </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {teams.map((team) => (
-            <Card key={team.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+            <Card
+              key={team.id}
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+            >
               <CardHeader>
                 <CardTitle>{team.name}</CardTitle>
                 {team.description && (
-                  <p className="text-sm text-muted-foreground">{team.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {team.description}
+                  </p>
                 )}
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center p-4">
@@ -154,8 +176,10 @@ export default function TeamsPage() {
                   <h4 className="text-sm font-semibold">Members:</h4>
                   <ul className="list-disc list-inside text-sm text-gray-700">
                     {team.members && team.members.length > 0 ? (
-                      team.members.map(member => (
-                        <li key={member.id}>{member.name} ({member.email})</li>
+                      team.members.map((member) => (
+                        <li key={member.id}>
+                          {member.name} ({member.email})
+                        </li>
                       ))
                     ) : (
                       <li>No members found.</li>
@@ -183,7 +207,10 @@ export default function TeamsPage() {
         </div>
       )}
 
-      <Dialog open={isCreateTeamDialogOpen} onOpenChange={setIsCreateTeamDialogOpen}>
+      <Dialog
+        open={isCreateTeamDialogOpen}
+        onOpenChange={setIsCreateTeamDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Team</DialogTitle>
@@ -202,7 +229,10 @@ export default function TeamsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateTeamDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateTeamDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleCreateTeam} disabled={isCreatingTeam}>

@@ -1,6 +1,5 @@
-import { auth } from "./firebase";
+import { auth, db } from "./firebase";
 import {
-  getFirestore,
   doc,
   setDoc,
   getDoc,
@@ -24,7 +23,7 @@ import type {
 } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
-const db = getFirestore();
+
 
 // Project Functions
 export const createProject = async (

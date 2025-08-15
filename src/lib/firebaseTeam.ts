@@ -1,7 +1,6 @@
-import { getFirestore, doc, addDoc, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { doc, addDoc, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { db } from './firebase';
 import type { Team, UserId, UserProfile } from './types';
-
-const db = getFirestore();
 
 export async function createTeam(teamName: string, creatorId: UserId, teamDescription: string): Promise<Team> {
   try {

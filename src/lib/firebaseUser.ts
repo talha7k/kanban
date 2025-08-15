@@ -1,11 +1,7 @@
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { auth } from './firebase';
-
-
- import type { UserProfile, UserDocument } from './types';
-
-const db = getFirestore();
+import { auth, db } from './firebase';
+import type { UserProfile, UserDocument } from './types';
 
 // User Profile Functions
 export const createUserProfileDocument = async (userAuth: FirebaseUser, additionalData?: Partial<Pick<UserProfile, 'name' | 'title'>>) => {
