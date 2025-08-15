@@ -5,17 +5,17 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "justify-center  bg-primary text-primary-foreground hover:bg-primary/80",
+        default: "justify-center  bg-gradient-to-r from-purple-500 to-pink-400 text-white hover:from-blue-500 hover:to-pink-400",
         destructive:
           "justify-center bg-destructive/80 text-destructive-foreground hover:bg-destructive",
         outline:
           "justify-center  border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary:
-          " justify-center  bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          " justify-center text-md bg-gradient-to-r from-blue-400 to-blue-500 text-white hover:text-white hover:from-blue-500 hover:to-purple-400",
         ghost: "justify-center  hover:bg-accent hover:text-accent-foreground",
         link: "justify-center  text-primary underline-offset-4 hover:underline",
       },

@@ -258,10 +258,10 @@ export default function TeamDetailPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{team.name}</h1>
         <div>
-          <Button onClick={() => setIsEditTeamDialogOpen(true)} className="mr-2">
+          <Button variant="secondary" onClick={() => setIsEditTeamDialogOpen(true)} className="mr-2">
             Edit Team
           </Button>
-          <Button onClick={() => setIsAddMemberDialogOpen(true)} className="mr-2">
+          <Button variant="secondary" onClick={() => setIsAddMemberDialogOpen(true)} className="mr-2">
             <UserPlus className="mr-2 h-4 w-4" /> Add Member
           </Button>
           {team.ownerId === currentUser?.uid && (
