@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getTeam, updateTeam, addMemberToTeam, removeMemberFromTeam, deleteTeam } from '@/lib/firebaseTeam';
-import { getUserProfileByEmail } from '@/lib/firebaseUser';
-import type { Team, UserId } from '@/lib/types';
+import { getTeam, updateTeam, addMemberToTeam, removeMemberFromTeam, deleteTeam, getTeamMembers } from '@/lib/firebaseTeam';
+import { getUserProfileByEmail, getUserProfile } from '@/lib/firebaseUser';
+import { getProjectsForTeam } from '@/lib/firebaseProject';
+import type { Team, UserId, UserProfile, Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,8 @@ export default function TeamDetailPage() {
   const router = useRouter();
 
   const [team, setTeam] = useState<Team | null>(null);
+  const [teamMembers, setTeamMembers] = useState<UserProfile[]>([]);
+  const [teamProjects, setTeamProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditTeamDialogOpen, setIsEditTeamDialogOpen] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
@@ -37,8 +40,16 @@ export default function TeamDetailPage() {
     if (!teamId || !currentUser?.uid) return;
     setIsLoading(true);
     try {
-      const fetchedTeam = await getTeam(teamId as string);
+      const [fetchedTeam, members, projects] = await Promise.all([
+        getTeam(teamId as string),
+        getTeamMembers(teamId as string),
+        getProjectsForTeam(teamId as string)
+      ]);
+      
       setTeam(fetchedTeam);
+      setTeamMembers(members);
+      setTeamProjects(projects);
+      
       if (fetchedTeam) {
         setNewTeamName(fetchedTeam.name);
         setNewTeamDescription(fetchedTeam.description || '');
@@ -107,10 +118,15 @@ export default function TeamDetailPage() {
       return;
     }
     
+    // Store the member being removed for potential revert
+    const memberToRemove = teamMembers.find(member => member.id === memberIdToRemove);
+    
     // Optimistically remove the member from the UI
     setTeam((prev: Team | null) =>
       prev ? { ...prev, memberIds: prev.memberIds.filter((id) => id !== memberIdToRemove) } : null
     );
+    setTeamMembers((prev) => prev.filter((member) => member.id !== memberIdToRemove));
+    
     try {
       await removeMemberFromTeam(team.id, memberIdToRemove);
       toast({
@@ -128,6 +144,9 @@ export default function TeamDetailPage() {
       setTeam((prev: Team | null) =>
         prev ? { ...prev, memberIds: [...prev.memberIds, memberIdToRemove] } : null
       );
+      if (memberToRemove) {
+        setTeamMembers((prev) => [...prev, memberToRemove]);
+      }
     }
   };
 
@@ -139,13 +158,28 @@ export default function TeamDetailPage() {
       if (!userProfile) {
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'User with this email not found.',
+          title: 'User Not Found',
+          description: `No registered user found with email "${memberEmail}". Please ask them to register first or send them an invitation.`,
         });
         return;
       }
+      
+      // Check if user is already a member
+      if (team.memberIds.includes(userProfile.id)) {
+        toast({
+          variant: 'destructive',
+          title: 'Already a Member',
+          description: `${userProfile.name} is already a member of this team.`,
+        });
+        return;
+      }
+      
       await addMemberToTeam(team.id, userProfile.id);
+      
+      // Update both team state and members list
       setTeam((prev: Team | null) => (prev ? { ...prev, memberIds: [...prev.memberIds, userProfile.id] } : null));
+      setTeamMembers((prev) => [...prev, userProfile]);
+      
       setMemberEmail('');
       setIsAddMemberDialogOpen(false);
       toast({
@@ -166,6 +200,17 @@ export default function TeamDetailPage() {
 
   const handleDeleteTeam = async () => {
     if (!team || !currentUser) return;
+    
+    // Check if team has projects
+    if (teamProjects.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot Delete Team',
+        description: `This team has ${teamProjects.length} project(s). Please delete all projects before deleting the team.`,
+      });
+      return;
+    }
+    
     setIsDeletingTeam(true);
     try {
       await deleteTeam(team.id);
@@ -245,18 +290,25 @@ export default function TeamDetailPage() {
           {team.memberIds.length === 0 ? (
             <p className="text-gray-500">No members in this team yet.</p>
           ) : (
-            <ul>
-              {team.memberIds.map((memberId) => (
-                <li key={memberId} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                  <span>{memberId}</span> {/* Replace with actual user name later */}
-                  {memberId !== currentUser?.uid && (
-                    <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(memberId)}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
+            <div className="space-y-2">
+              {teamMembers.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-2 border rounded">
+                  <div className="flex flex-col">
+                    <span className="font-medium">{member.name}</span>
+                    <span className="text-sm text-gray-600">{member.email}</span>
+                  </div>
+                  {member.id !== currentUser?.uid && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveMember(member.id)}
+                    >
+                      Remove
                     </Button>
                   )}
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -350,15 +402,34 @@ export default function TeamDetailPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-gray-600">
-              Are you sure you want to delete the team "{team?.name}"? This action cannot be undone and will remove all team data.
-            </p>
+            {teamProjects.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  This team cannot be deleted because it has {teamProjects.length} active project(s):
+                </p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  {teamProjects.slice(0, 5).map((project) => (
+                    <li key={project.id}>{project.name}</li>
+                  ))}
+                  {teamProjects.length > 5 && (
+                    <li>...and {teamProjects.length - 5} more</li>
+                  )}
+                </ul>
+                <p className="font-medium text-sm text-gray-600">
+                  Please delete all projects before deleting the team.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete the team "{team?.name}"? This action cannot be undone and will remove all team data.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteTeamDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteTeam} disabled={isDeletingTeam}>
+            <Button variant="destructive" onClick={handleDeleteTeam} disabled={isDeletingTeam || teamProjects.length > 0}>
               {isDeletingTeam ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (

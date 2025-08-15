@@ -142,16 +142,15 @@ export const getProjectById = async (
     throw error;
   }
 };
+ 
 
-export const getProjectsForUser = async (
-  userId: UserId,
+export const getProjectsForTeam = async (
   teamId: TeamId
 ): Promise<Project[]> => {
   try {
     const projectsCollectionRef = collection(db, "projects");
     const q = query(
       projectsCollectionRef,
-      where("memberIds", "array-contains", userId),
       where("teamId", "==", teamId)
     );
     const querySnapshot = await getDocs(q);
@@ -160,7 +159,7 @@ export const getProjectsForUser = async (
       ...doc.data(),
     })) as Project[];
   } catch (error) {
-    console.error("Error fetching projects for user:", error);
+    console.error("Error fetching projects for team:", error);
     throw error;
   }
 };

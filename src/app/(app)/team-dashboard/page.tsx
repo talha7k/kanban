@@ -26,7 +26,7 @@ import { PlusCircle,
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
-import { getProjectsForUser } from "@/lib/firebaseProject";
+import { getProjectsForTeam } from "@/lib/firebaseProject";
 
 
  import { deleteProject as deleteProjectFromDb } from "@/lib/firebaseProject";
@@ -134,11 +134,11 @@ export default function DashboardPage() {
 
     // Fetch projects
     try {
-      const userProjects = await getProjectsForUser(currentUser.uid, selectedTeamId);
-      setProjects(userProjects);
+      const teamProjects = await getProjectsForTeam(selectedTeamId);
+      setProjects(teamProjects);
 
       if (selectedProjectForMembers) {
-        const updatedSelectedProject = userProjects.find(
+        const updatedSelectedProject = teamProjects.find(
           (p: Project) => p.id === selectedProjectForMembers.id
         );
         if (updatedSelectedProject) {
