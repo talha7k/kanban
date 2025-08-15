@@ -9,8 +9,8 @@ const fontSans = FontSans({
 });
 
 export const metadata: Metadata = {
-  title: 'Dijitize.com - Project Management',
-  description: 'Project management application by Dijitize.com for small teams.',
+  title: 'DijiKanban - Project Management',
+description: 'Project management application by DijiKanban for small teams.',
   icons: {
     icon: '/favicon.ico',
   },

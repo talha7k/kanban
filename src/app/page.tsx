@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { KanbanIcon } from "@/components/icons/KanbanIcon"; // Assuming you have this
-// You might want to import or create other icons for the features section
-// import { UsersIcon, LockIcon, MessageSquareIcon, EditIcon, MoveIcon, RocketIcon } from 'lucide-react'; // Example using lucide-react
+import { UsersIcon, LockIcon, MessageSquareIcon, EditIcon, MoveIcon, RocketIcon } from 'lucide-react';
 
 export default function HomePage() {
   return (
@@ -46,7 +45,7 @@ export default function HomePage() {
         <div className="container mx-auto">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Why You'll Love <span className="text-primary">Kan Projects</span>
+              Why You'll Love <span className="text-primary">DijiKanban</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               We've built the features your web development team actually needs
@@ -57,11 +56,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1: Project Creation & Role-Based Access */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              {/* <RocketIcon className="w-12 h-12 text-primary mb-4" />  Replace with actual icon */}
-              <div className="w-12 h-12 text-primary mb-4">
-                {" "}
-                {/* Placeholder for Icon */} ⚙️{" "}
-              </div>
+              <RocketIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
                 Effortless Project Setup
               </h3>
@@ -74,11 +69,7 @@ export default function HomePage() {
 
             {/* Feature 2: Granular Task Control */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              {/* <EditIcon className="w-12 h-12 text-primary mb-4" /> */}
-              <div className="w-12 h-12 text-primary mb-4">
-                {" "}
-                {/* Placeholder for Icon */} ✏️{" "}
-              </div>
+              <EditIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
                 Precision Task Management
               </h3>
@@ -91,11 +82,7 @@ export default function HomePage() {
 
             {/* Feature 3: Secure & Focused Boards */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              {/* <LockIcon className="w-12 h-12 text-primary mb-4" /> */}
-              <div className="w-12 h-12 text-primary mb-4">
-                {" "}
-                {/* Placeholder for Icon */} 🔒{" "}
-              </div>
+              <LockIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
                 Secure Project Workspaces
               </h3>
@@ -108,11 +95,7 @@ export default function HomePage() {
 
             {/* Feature 4: Intuitive Task Movement */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              {/* <MoveIcon className="w-12 h-12 text-primary mb-4" /> */}
-              <div className="w-12 h-12 text-primary mb-4">
-                {" "}
-                {/* Placeholder for Icon */} ↔️{" "}
-              </div>
+              <MoveIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
                 Fluid Kanban Workflow
               </h3>
@@ -125,11 +108,7 @@ export default function HomePage() {
 
             {/* Feature 5: In-Task Collaboration */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              {/* <MessageSquareIcon className="w-12 h-12 text-primary mb-4" /> */}
-              <div className="w-12 h-12 text-primary mb-4">
-                {" "}
-                {/* Placeholder for Icon */} 💬{" "}
-              </div>
+              <MessageSquareIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
                 Contextual Discussions
               </h3>
@@ -142,11 +121,7 @@ export default function HomePage() {
 
             {/* Feature 6: Total Team Visibility (for managers) */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              {/* <UsersIcon className="w-12 h-12 text-primary mb-4" /> */}
-              <div className="w-12 h-12 text-primary mb-4">
-                {" "}
-                {/* Placeholder for Icon */} 👁️{" "}
-              </div>
+              <UsersIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
                 Clear Oversight & Progress
               </h3>
