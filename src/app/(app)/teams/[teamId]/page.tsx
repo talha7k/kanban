@@ -50,6 +50,10 @@ export default function TeamDetailPage() {
       setTeamMembers(members);
       setTeamProjects(projects);
       
+      console.log('Fetched team:', fetchedTeam);
+      console.log('Fetched members:', members);
+      console.log('Fetched projects:', projects);
+      
       if (fetchedTeam) {
         setNewTeamName(fetchedTeam.name);
         setNewTeamDescription(fetchedTeam.description || '');
@@ -289,6 +293,8 @@ export default function TeamDetailPage() {
         <CardContent>
           {team.memberIds.length === 0 ? (
             <p className="text-gray-500">No members in this team yet.</p>
+          ) : teamMembers.length === 0 ? (
+            <p className="text-gray-500">Loading member details...</p>
           ) : (
             <div className="space-y-2">
               {teamMembers.map((member) => (

@@ -125,13 +125,16 @@ export const getTeamMembers = async (teamId: string): Promise<UserProfile[]> => 
       return [];
     }
 
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('uid', 'in', memberIds));
-    const querySnapshot = await getDocs(q);
+    // Fetch user profiles by document ID since user documents use document ID as the user ID
     const members: UserProfile[] = [];
-    querySnapshot.forEach((doc) => {
-      members.push({ id: doc.id, ...doc.data() } as UserProfile);
-    });
+    for (const memberId of memberIds) {
+      const userRef = doc(db, 'users', memberId);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        members.push({ id: userSnap.id, ...userData } as UserProfile);
+      }
+    }
     return members;
   } catch (error) {
     console.error('Error fetching team members:', error);
