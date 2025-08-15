@@ -9,8 +9,11 @@ const fontSans = FontSans({
 });
 
 export const metadata: Metadata = {
-  title: 'KanbanAI - Team Management',
-  description: 'Kanban-style application using Next.js and Firebase for web development teams.',
+  title: 'Dijitize.com - Project Management',
+  description: 'Project management application by Dijitize.com for small teams.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
