@@ -3,7 +3,7 @@
 import { generateProjectTasks } from '@/ai/flows/generate-project-tasks';
 import { addTaskToProject } from '@/lib/firebaseTask';
 import { getProjectById } from '@/lib/firebaseProject';
-import type { NewTaskData } from '@/lib/types';
+import type { NewTaskData, Task } from '@/lib/types';
 import { generateTaskDetails, type GenerateTaskDetailsInput, type GenerateTaskDetailsOutput } from '@/ai/flows/generate-task-details';
 
 export async function generateTasksAction(projectId: string, brief: string, currentUserUid: string, taskCount: number = 3) {
@@ -12,31 +12,74 @@ export async function generateTasksAction(projectId: string, brief: string, curr
     const project = await getProjectById(projectId);
 
     if (!project) {
-      throw new Error(`Project with ID ${projectId} not found.`);
+      throw new Error("Project not found");
     }
 
-    for (const task of generatedTasks) {
-      const defaultColumnId = project.columns[0]?.id;
-      if (defaultColumnId) {
-        const newTaskPayload: NewTaskData = {
-          title: task.title,
-          description: task.description,
-          projectId: project.id,
-          reporterId: currentUserUid,
-          priority: 'MEDIUM',
+    // Return the generated tasks without adding them to the project
+    return generatedTasks.map(taskData => ({
+      title: taskData.title,
+      description: taskData.description,
+      priority: 'MEDIUM' as const,
+      projectId,
+      columnId: project.columns[0]?.id || 'todo',
+      reporterId: currentUserUid,
+      order: 0, // Will be set properly when adding to project
+      assigneeUids: [],
+      dueDate: null,
+      tags: [],
+      dependentTaskTitles: [],
+    }));
+  } catch (error) {
+    console.error('Error in generateTasksAction:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to generate AI project tasks. Please try again.');
+  }
+}
+
+export async function addApprovedTasksAction(projectId: string, tasks: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>[], currentUserUid: string) {
+  try {
+    const project = await getProjectById(projectId);
+
+    if (!project) {
+      return { success: false, error: "Project not found" };
+    }
+
+    let addedTasksCount = 0;
+    for (const taskData of tasks) {
+      try {
+        await addTaskToProject(projectId, {
+          title: taskData.title,
+          description: taskData.description,
+          priority: taskData.priority,
+          projectId: taskData.projectId,
+          reporterId: taskData.reporterId,
           createdAt: new Date().toISOString(),
-          order: 0,
-        };
-        await addTaskToProject(project.id, newTaskPayload, defaultColumnId, currentUserUid);
+          order: project.tasks.length + addedTasksCount,
+          assigneeUids: taskData.assigneeUids,
+          dueDate: taskData.dueDate,
+          tags: taskData.tags,
+          dependentTaskTitles: taskData.dependentTaskTitles,
+        }, currentUserUid);
+        addedTasksCount++;
+      } catch (error) {
+        console.error('Error adding task:', error);
+        // Continue with other tasks even if one fails
       }
     }
 
-    // Re-fetch project data to update the UI with new tasks
+    // Fetch updated project
     const updatedProject = await getProjectById(projectId);
-    return { success: true, generatedTasksCount: generatedTasks.length, updatedProject };
+
+    return { 
+      success: true, 
+      addedTasksCount,
+      updatedProject 
+    };
   } catch (error) {
-    console.error("Error generating tasks in server action:", error);
-    return { success: false, error: error instanceof Error ? error.message : "An unknown error occurred during task generation." };
+    console.error('Error in addApprovedTasksAction:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to add tasks to project. Please try again.' 
+    };
   }
 }
 

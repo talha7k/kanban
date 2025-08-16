@@ -5,33 +5,79 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { TaskApprovalDialog } from './TaskApprovalDialog';
+import type { Task } from '@/lib/types';
 
 interface GenerateTasksDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onGenerate: (brief: string, taskCount: number) => Promise<void>;
+  onGenerate: (brief: string, taskCount: number) => Promise<Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>[]>;
+  onAddTasks: (tasks: Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
   isGenerating: boolean;
+  isAddingTasks: boolean;
 }
 
 export function GenerateTasksDialog({
   isOpen,
   onOpenChange,
   onGenerate,
+  onAddTasks,
   isGenerating,
+  isAddingTasks,
 }: GenerateTasksDialogProps) {
   const [briefInput, setBriefInput] = useState('');
   const [taskCount, setTaskCount] = useState(3);
+  const [currentStep, setCurrentStep] = useState<'generate' | 'approve'>('generate');
+  const [generatedTasks, setGeneratedTasks] = useState<Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>[]>([]);
 
   const handleSubmit = async () => {
     if (briefInput.trim()) {
-      await onGenerate(briefInput, taskCount);
-      setBriefInput(''); // Clear input after generation
-      setTaskCount(3); // Reset to default
+      const tasks = await onGenerate(briefInput, taskCount);
+      setGeneratedTasks(tasks);
+      setCurrentStep('approve');
     }
   };
 
+  const handleApprove = async (selectedTasks: Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>[]) => {
+    await onAddTasks(selectedTasks);
+    // Reset state after successful addition
+    setBriefInput('');
+    setTaskCount(3);
+    setCurrentStep('generate');
+    setGeneratedTasks([]);
+    onOpenChange(false);
+  };
+
+  const handleBack = () => {
+    setCurrentStep('generate');
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      // Reset state when dialog is closed
+      setBriefInput('');
+      setTaskCount(3);
+      setCurrentStep('generate');
+      setGeneratedTasks([]);
+    }
+    onOpenChange(open);
+  };
+
+  if (currentStep === 'approve') {
+    return (
+      <TaskApprovalDialog
+        isOpen={isOpen}
+        onOpenChange={handleDialogOpenChange}
+        generatedTasks={generatedTasks}
+        onApprove={handleApprove}
+        onBack={handleBack}
+        isAdding={isAddingTasks}
+      />
+    );
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Generate Tasks with AI</DialogTitle>

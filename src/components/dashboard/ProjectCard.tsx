@@ -46,7 +46,7 @@ export function ProjectCard({
   return (
     <Card
       key={project.id}
-      className="bg-primary/5 hover:shadow-lg transition-shadow  hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100"
+      className="bg-gradient-to-r from-pink-100 to-white hover:shadow-lg transition-shadow  hover:bg-gradient-to-r hover:from-pink-200 hover:to-purple-100"
     >
       <CardHeader
         onClick={() => (window.location.href = `/projects/${project.id}`)}

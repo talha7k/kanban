@@ -28,7 +28,7 @@ export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
 
   return (
     <Card
-      className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-0 shadow-md hover:scale-[1.02] bg-gradient-to-br from-white to-gray-50/50 hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100"
+      className="bg-gradient-to-r from-purple-100 to-white  group cursor-pointer hover:shadow-xl transition-all duration-300 border-0 shadow-md hover:scale-[1.02]   hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100"
       onClick={(e) => handleSelect(e, team.id)}
     >
       <CardHeader className="pb-3">
@@ -112,7 +112,7 @@ export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
         <div className="flex gap-2 pt-2 w-full">
           {isOwner && (
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               className="w-full"
               onClick={(e) => {

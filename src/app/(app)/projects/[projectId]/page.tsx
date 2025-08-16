@@ -1,7 +1,7 @@
 
 "use client";
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
-import type { Project, UserProfile, NewTaskData } from '@/lib/types';
+import type { Project, UserProfile, NewTaskData, Task } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { getAllUserProfiles } from '@/lib/firebaseUser';
 import { getProjectById, updateProjectDetails } from '@/lib/firebaseProject'; 
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { EditProjectDialog } from '@/components/project/EditProjectDialog'; 
 import { GenerateTasksDialog } from '@/components/project/GenerateTasksDialog';
-import { generateTasksAction } from '@/app/actions/project';
+import { generateTasksAction, addApprovedTasksAction } from '@/app/actions/project';
 import { useParams } from 'next/navigation';
 export default function ProjectPage() {
   const { currentUser } = useAuth();
@@ -29,6 +29,7 @@ export default function ProjectPage() {
   const [isGenerateTasksDialogOpen, setIsGenerateTasksDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
+  const [isAddingTasks, setIsAddingTasks] = useState(false);
 
   useEffect(() => {
 
@@ -102,26 +103,44 @@ export default function ProjectPage() {
   };
 
   const handleGenerateTasks = async (brief: string, taskCount: number) => {
-    if (!project) return;
+    if (!project) return [];
     setIsGeneratingTasks(true);
     try {
-      const result = await generateTasksAction(project.id, brief, currentUser!.uid, taskCount);
+      const generatedTasks = await generateTasksAction(project.id, brief, currentUser!.uid, taskCount);
+      return generatedTasks;
+    } catch (error) {
+      console.error("Error generating tasks:", error);
+      toast({ variant: "destructive", title: "Error Generating Tasks", description: error instanceof Error ? error.message : "Could not generate tasks." });
+      return [];
+    } finally {
+      setIsGeneratingTasks(false);
+    }
+  };
+
+  const handleAddTasks = async (tasks: Omit<Task, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>[]) => {
+    if (!project) return;
+    setIsAddingTasks(true);
+    try {
+      // Add projectId to each task
+      const tasksWithProjectId = tasks.map(task => ({
+        ...task,
+        projectId: project.id
+      }));
+      const result = await addApprovedTasksAction(project.id, tasksWithProjectId, currentUser!.uid);
 
       if (result.success) {
         if (result.updatedProject) {
           setProject(result.updatedProject);
         }
-        toast({ title: "AI Task Generation", description: `Successfully generated ${result.generatedTasksCount} tasks.` });
-        setIsGenerateTasksDialogOpen(false);
+        toast({ title: "Tasks Added", description: `Successfully added ${result.addedTasksCount} task${result.addedTasksCount !== 1 ? 's' : ''} to your project.` });
       } else {
         throw new Error(result.error);
       }
-      setIsGenerateTasksDialogOpen(false);
     } catch (error) {
-      console.error("Error generating tasks:", error);
-      toast({ variant: "destructive", title: "Error Generating Tasks", description: error instanceof Error ? error.message : "Could not generate tasks." });
+      console.error("Error adding tasks:", error);
+      toast({ variant: "destructive", title: "Error Adding Tasks", description: error instanceof Error ? error.message : "Could not add tasks to project." });
     } finally {
-      setIsGeneratingTasks(false);
+      setIsAddingTasks(false);
     }
   };
 
@@ -214,7 +233,9 @@ export default function ProjectPage() {
           isOpen={isGenerateTasksDialogOpen}
           onOpenChange={setIsGenerateTasksDialogOpen}
           onGenerate={handleGenerateTasks}
+          onAddTasks={handleAddTasks}
           isGenerating={isGeneratingTasks}
+          isAddingTasks={isAddingTasks}
         />
       )}
 
