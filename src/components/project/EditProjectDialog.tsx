@@ -103,22 +103,13 @@ export function EditProjectDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleDialogClose(); else onOpenChange(open); }}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent  >
         <DialogHeader>
           <DialogTitle>Edit Project Details</DialogTitle>
           <DialogDescription>
             Update your project&apos;s name, description, and team association. Click save when you&apos;re done.
           </DialogDescription>
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onDeleteProject(project)}
-              disabled={isSubmitting}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Project
-            </Button>
-          </div>
+     
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
           <div className="space-y-1">
@@ -168,12 +159,21 @@ export function EditProjectDialog({
             )}
           </div>
           <DialogFooter>
+             
             <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save Changes
+            </Button>
+            <Button
+              variant="destructive"
+              className="my-4 sm:my-0"
+              onClick={() => onDeleteProject(project)}
+              disabled={isSubmitting}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Project
             </Button>
           </DialogFooter>
         </form>

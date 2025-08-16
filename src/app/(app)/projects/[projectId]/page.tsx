@@ -11,6 +11,7 @@ import { Loader2, Settings, Sparkles, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { EditProjectDialog } from "@/components/project/EditProjectDialog";
+import { DeleteProjectAlertDialog } from "@/components/dashboard/DeleteProjectAlertDialog";
 import { GenerateTasksDialog } from "@/components/project/GenerateTasksDialog";
 import {
   generateTasksAction,
@@ -31,6 +32,8 @@ export default function ProjectPage() {
   const [isGenerateTasksDialogOpen, setIsGenerateTasksDialogOpen] =
     useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
   const [isAddingTasks, setIsAddingTasks] = useState(false);
 
@@ -95,6 +98,43 @@ export default function ProjectPage() {
 
   const openDeleteProjectDialog = (project: Project) => {
     setProjectToDelete(project);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete || !currentUser || currentUser.uid !== projectToDelete.ownerId) {
+      toast({
+        variant: "destructive",
+        title: "Permission Denied",
+        description: "Only the project owner can delete a project.",
+      });
+      return;
+    }
+
+    setIsDeletingProject(true);
+    try {
+      // Assuming you have a deleteProject function in firebaseProject.ts
+      // await deleteProject(projectToDelete.id);
+      toast({
+        title: "Project Deleted",
+        description: `"${projectToDelete.name}" has been successfully deleted.`, 
+      });
+      // Redirect to dashboard or appropriate page after deletion
+      // router.push('/team-dashboard'); // You might need to import useRouter from 'next/navigation'
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Could not delete project.";
+      toast({
+        variant: "destructive",
+        title: "Deletion Failed",
+        description: errorMessage,
+      });
+    } finally {
+      setIsDeletingProject(false);
+      setIsDeleteDialogOpen(false);
+      setProjectToDelete(null);
+    }
   };
 
   const handleEditProjectSubmit = async (data: {
@@ -270,7 +310,7 @@ export default function ProjectPage() {
                 )}
               </div>
             </div>
-              <div className="flex flex-col sm:flex-row gap-2 items-end">
+              <div className="flex flex-col sm:flex-row gap-2">
                 {currentUser?.uid === project.ownerId && (
                   <>
                     <Button
@@ -309,6 +349,16 @@ export default function ProjectPage() {
           onEditProject={handleEditProjectSubmit}
           onDeleteProject={openDeleteProjectDialog}
           isSubmitting={isSubmittingProjectEdit}
+        />
+      )}
+
+      {projectToDelete && (
+        <DeleteProjectAlertDialog
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          projectName={projectToDelete.name}
+          onConfirmDelete={handleDeleteProject}
+          isDeleting={isDeletingProject}
         />
       )}
 
