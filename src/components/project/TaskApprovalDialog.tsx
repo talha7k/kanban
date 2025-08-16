@@ -89,7 +89,7 @@ export function TaskApprovalDialog({
           <div className="space-y-3">
             {generatedTasks.map((task, index) => (
               <Card key={index} className={`transition-all p-3 ${
-                selectedTaskIds.has(index) ? 'ring-1 ring-ring' : 'opacity-70'
+                selectedTaskIds.has(index) ? 'ring-1' : 'opacity-70'
               }`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start gap-3">

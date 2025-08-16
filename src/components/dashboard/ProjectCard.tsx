@@ -19,6 +19,7 @@ import {
   Pencil,
   Trash2,
   Users,
+  Users2Icon,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -64,15 +65,15 @@ export function ProjectCard({
           onClick={() => (window.location.href = `/projects/${project.id}`)}
           className="line-clamp-2 min-h-[40px] break-words cursor-pointer"
         >
-          {project.description || "No description available."}
+          {project.description || "No description available."}<div className="flex items-center space-x-2 mb-1">
+          <span className="text-xs font-medium text-blue-400 mt-2">
+            <Users2Icon className="mr-1.5 h-3.5 w-3.5" /> {project.memberIds?.length || 0}
+          </span>
+        </div>
         </CardDescription>
       </CardHeader>
       <CardFooter className="flex flex-col items-start space-y-3 border-t">
-        <div className="flex items-center space-x-2 mb-1">
-          <span className="text-xs text-blue-400 mt-2">
-            {project.memberIds?.length || 0} Member(s)
-          </span>
-        </div>
+        
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
