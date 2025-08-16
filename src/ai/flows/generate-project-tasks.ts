@@ -37,23 +37,26 @@ Example Output:
 
 Generated Tasks:`;
 
-    const llmResponse = await ai.generate({
-      prompt: prompt,
-      model: 'deepseek/deepseek-chat',
-      config: { temperature: 0.7 },
-    });
-
-    const text = llmResponse.text;
     try {
+      const llmResponse = await ai.generate({
+        prompt: prompt,
+        config: { temperature: 0.7 },
+
+      });
+
+      const text = llmResponse.text;
       const parsedTasks = JSON.parse(text);
+      console.log("text:::::::::::", text);
+      console.log("parsedTasks:::::::::::", parsedTasks);
       // Basic validation to ensure it's an array of objects with title and description
       if (!Array.isArray(parsedTasks) || !parsedTasks.every(task => typeof task === 'object' && task !== null && 'title' in task && 'description' in task)) {
         throw new Error('Invalid JSON format from AI: Expected an array of objects with title and description.');
       }
+      
       return { tasks: parsedTasks };
     } catch (e) {
-      console.error('Failed to parse AI response as JSON:', text, e);
-      throw new Error('Failed to parse AI response for tasks. Please try again.');
+      console.error('Failed to generate project tasks:', e);
+      throw new Error('Failed to generate AI project tasks. Please try again.');
     }
   }
 );

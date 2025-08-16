@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -104,6 +105,9 @@ export function TaskDetailsDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
+          <DialogDescription className="sr-only">
+            Task details dialog for {task.title}
+          </DialogDescription>
           <div className="flex justify-between items-start">
             <DialogTitle className="text-2xl font-bold text-foreground">{task.title}</DialogTitle>
             {canManageTask && (
