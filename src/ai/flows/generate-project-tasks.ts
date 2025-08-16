@@ -1,10 +1,14 @@
-import { z } from 'zod';
+'use server';
+
+import { z } from 'genkit';
 import { ai } from '@/ai/genkit';
 
 const GenerateProjectTasksInputSchema = z.object({
   brief: z.string().describe('A brief description or list of requirements for the project tasks.'),
 });
-
+export type GenerateProjectTasksInput = z.infer<
+  typeof GenerateProjectTasksInputSchema
+>;
 const GenerateProjectTasksOutputSchema = z.object({
   tasks: z.array(z.object({
     title: z.string().describe('The title of the task.'),
