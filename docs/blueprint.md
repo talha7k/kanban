@@ -1,4 +1,4 @@
-# **App Name**: KanbanAI
+# **App Name**: DijiKanban
 
 ## Core Features:
 

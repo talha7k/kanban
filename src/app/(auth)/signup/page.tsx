@@ -66,7 +66,7 @@ export default function SignupPage() {
       <CardHeader className="items-center text-center">
         <KanbanIcon className="w-12 h-12 text-primary mb-2" />
         <CardTitle className="text-2xl">Create an Account</CardTitle>
-        <CardDescription>Join KanbanAI to manage your projects efficiently.</CardDescription>
+        <CardDescription>Join DijiKanban to manage your projects efficiently.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

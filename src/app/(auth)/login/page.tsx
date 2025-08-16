@@ -62,7 +62,7 @@ export default function LoginPage() {
       <CardHeader className="items-center text-center">
         <KanbanIcon className="w-12 h-12 text-primary mb-2" />
         <CardTitle className="text-2xl">Welcome Back!</CardTitle>
-        <CardDescription>Login to access your KanbanAI dashboard.</CardDescription>
+        <CardDescription>Login to access your DijiKanban dashboard.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

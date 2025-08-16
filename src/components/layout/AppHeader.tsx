@@ -33,24 +33,26 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        <Link href="/" className="mr-6 flex items-center space-x-2">
-          <KanbanIcon className="h-6 w-6 text-primary" />
-          <span className="font-bold sm:inline-block">
-            KanbanAI
-          </span>
-        </Link>
-        <nav className="flex flex-1 items-center space-x-4">
-          {currentUser && (
-            <Button variant="ghost" asChild>
-              <Link href="/teams">
-                <Users className="mr-2 h-4 w-4" />
-                Teams
-              </Link>
-            </Button>
-          )}
-        </nav>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
+      <div className="flex h-14 items-center justify-between w-full">
+        <div className="flex items-center">
+          <Link href="/" className="mr-6 flex items-center space-x-2">
+            <KanbanIcon className="h-6 w-6 text-primary" />
+            <span className="font-bold sm:inline-block">
+              DijiKanban
+            </span>
+          </Link>
+          <nav className="flex items-center space-x-4">
+            {currentUser && (
+              <Button variant="ghost" asChild>
+                <Link href="/teams">
+                  <Users className="mr-2 h-4 w-4" />
+                  Teams
+                </Link>
+              </Button>
+            )}
+          </nav>
+        </div>
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="icon" asChild>
             <a href="https://github.com/talha7k/kanban" target="_blank" rel="noopener noreferrer">
