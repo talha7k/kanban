@@ -43,6 +43,7 @@ export async function generateTasksAction(projectId: string, brief: string, curr
 export async function generateTaskDetailsAction(input: GenerateTaskDetailsInput): Promise<{ success: boolean; details?: GenerateTaskDetailsOutput; error?: string }> {
   try {
     const details = await generateTaskDetails(input);
+    console.log("Generated task details:", details);
     return { success: true, details };
   } catch (error) {
     console.error("Error generating AI task details in server action:", error);

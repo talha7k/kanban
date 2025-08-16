@@ -179,9 +179,8 @@ export default function ProjectPage() {
                                 <Settings className="h-5 w-5" />
                                 <span className="sr-only">Edit Project Details</span>
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setIsGenerateTasksDialogOpen(true)} className="ml-1" disabled={isSubmittingProjectEdit}>
+                            <Button variant="default" size="icon" onClick={() => setIsGenerateTasksDialogOpen(true)} className="ml-1" disabled={isSubmittingProjectEdit}>
                                 <Sparkles className="h-5 w-5" />
-                                <span className="sr-only">Generate Tasks with AI</span>
                             </Button>
                         </>
                         )}

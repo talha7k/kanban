@@ -2,7 +2,6 @@
 
 import { ai } from "@/ai/genkit";
 
-
 import { z } from "zod";
 
 const GenerateTaskDetailsInputSchema = z.object({
@@ -31,8 +30,15 @@ export async function generateTaskDetails(
 
 Given the following brief input, generate a concise title and a detailed description for a task.
 
-Brief Input: ${input.briefInput}`;
-
+Brief Input: ${input.briefInput}
+Example Output:
+[
+  {
+    "title": "Setup project environment",
+    "description": "Initialize a new project, configure dependencies, and set up version control."
+  }
+]
+Generated Task:`;
   try {
     const llmResponse = await ai.generate({
       prompt: prompt,
@@ -43,7 +49,7 @@ Brief Input: ${input.briefInput}`;
     const text = llmResponse.text || "";
     const parsedResult = JSON.parse(text);
 
-    console.log("text:::::::::::", text);
+    console.log("llm response text:::::::::::", text);
     console.log("parsedResult:::::::::::", parsedResult);
 
     // Basic validation to ensure it has title and description
