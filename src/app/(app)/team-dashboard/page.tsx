@@ -401,8 +401,8 @@ export default function DashboardPage() {
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : projects.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] overflow-y-auto overflow-x-auto">
-                <div className="space-y-4">
+              <ScrollArea className="h-auto max-h-[450px] md:max-h-[500px] overflow-y-auto overflow-x-auto">
+                <div className="space-y-4 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
                   {projects.map((project) => (
                     <ProjectCard
                       key={project.id}
@@ -413,7 +413,7 @@ export default function DashboardPage() {
                       openManageMembersDialog={openManageMembersDialog}
                       openDeleteProjectDialog={openDeleteProjectDialog}
                       openViewMembersDialog={openViewMembersDialog}
-                    />
+                     />
                   ))}
                 </div>
               </ScrollArea>

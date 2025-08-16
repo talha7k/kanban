@@ -150,7 +150,7 @@ export default function TeamsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="mx-auto p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
