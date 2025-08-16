@@ -140,6 +140,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     const newTaskPayload: NewTaskData = {
       ...taskData,
       reporterId: userProfile?.id || (isOwner ? currentUser.uid : undefined),
+      order: projectData.tasks.filter(task => task.columnId === columnId).length, // Assign order based on current tasks in column
+      projectId: projectData.id, // Assign projectId from current project
+      createdAt: new Date().toISOString(), // Assign current timestamp
     };
 
     console.log("Attempting to add task with payload:", newTaskPayload);
@@ -425,14 +428,14 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 px-1 gap-2">
          <div className="flex gap-2 items-center">
             <Button 
-                variant={taskViewFilter === 'all' ? 'default' : 'outline'} 
+                variant={taskViewFilter === 'all' ? 'yellow' : 'outline'} 
                 onClick={() => setTaskViewFilter('all')}
                 size="sm"
             >
                 <ListFilter className="mr-2 h-4 w-4" /> All Tasks
             </Button>
             <Button 
-                variant={taskViewFilter === 'mine' ? 'default' : 'outline'} 
+                variant={taskViewFilter === 'mine' ? 'yellow' : 'outline'} 
                 onClick={() => setTaskViewFilter('mine')}
                 size="sm"
             >
@@ -449,7 +452,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
                     setSelectedColumnIdForNewTask(projectData.columns.sort((a,b) => a.order - b.order)[0]?.id || null);
                     setIsAddTaskDialogOpen(true);
                 }}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
+                variant="yellow"
                 disabled={isSubmitting || projectData.columns.length === 0}
             >
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}

@@ -44,6 +44,7 @@ interface TaskCardProps {
   onMoveToNextColumn: (task: Task) => void;
   onMoveToPreviousColumn: (task: Task) => void;
   isSubmitting?: boolean;
+  onUpdateTask: (taskId: string, updatedFields: Partial<Task>) => void;
 }
 
 export function TaskCard({
@@ -58,6 +59,7 @@ export function TaskCard({
   onMoveToNextColumn,
   onMoveToPreviousColumn,
   isSubmitting,
+  onUpdateTask,
 }: TaskCardProps) {
   const { currentUser } = useAuth();
   const assignees =
