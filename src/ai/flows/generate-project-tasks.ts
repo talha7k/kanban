@@ -16,6 +16,13 @@ const GenerateProjectTasksOutputSchema = z.object({
   })).describe('An array of generated tasks.'),
 });
 
+const prompt = ai.definePrompt({
+  name: 'generateProjectTasksPrompt',
+  input: {schema: GenerateProjectTasksInputSchema},
+  output: {schema: GenerateProjectTasksOutputSchema},
+  prompt: `Based on the following brief, generate a list of distinct tasks for a project. Each task should have a concise title and a detailed description.\n\nBrief: {{{brief}}}\n`,
+});
+
 export const generateProjectTasksFlow = ai.defineFlow(
   {
     name: 'generateProjectTasks',
@@ -23,45 +30,8 @@ export const generateProjectTasksFlow = ai.defineFlow(
     outputSchema: GenerateProjectTasksOutputSchema,
   },
   async input => {
-    const prompt = `Based on the following brief, generate a list of distinct tasks for a project. Each task should have a concise title and a detailed description. Provide the output as a JSON array of objects with 'title' and 'description' keys.
-
-Brief: ${input.brief}
-
-Example Output:
-[
-  {
-    "title": "Setup project environment",
-    "description": "Initialize a new project, configure dependencies, and set up version control."
-  },
-  {
-    "title": "Design database schema",
-    "description": "Create an ER diagram and define tables, relationships, and data types for the project's database."
-  }
-]
-
-Generated Tasks:`;
-
-    try {
-      const llmResponse = await ai.generate({
-        prompt: prompt,
-        config: { temperature: 0.7 },
-
-      });
-
-      const text = llmResponse.text;
-      const parsedTasks = JSON.parse(text);
-      console.log("text:::::::::::", text);
-      console.log("parsedTasks:::::::::::", parsedTasks);
-      // Basic validation to ensure it's an array of objects with title and description
-      if (!Array.isArray(parsedTasks) || !parsedTasks.every(task => typeof task === 'object' && task !== null && 'title' in task && 'description' in task)) {
-        throw new Error('Invalid JSON format from AI: Expected an array of objects with title and description.');
-      }
-      
-      return { tasks: parsedTasks };
-    } catch (e) {
-      console.error('Failed to generate project tasks:', e);
-      throw new Error('Failed to generate AI project tasks. Please try again.');
-    }
+    const {output} = await prompt(input);
+    return output!;
   }
 );
 
