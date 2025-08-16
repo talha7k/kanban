@@ -58,7 +58,7 @@ export async function addApprovedTasksAction(projectId: string, tasks: Omit<Task
           dueDate: taskData.dueDate,
           tags: taskData.tags,
           dependentTaskTitles: taskData.dependentTaskTitles,
-        }, currentUserUid);
+        }, taskData.columnId || project.columns[0]?.id || 'todo', currentUserUid);
         addedTasksCount++;
       } catch (error) {
         console.error('Error adding task:', error);
