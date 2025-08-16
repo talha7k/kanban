@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { defineFlow } from '@genkit-ai/flow';
+import { defineFlow, runFlow } from '@genkit-ai/flow';
 import { ai } from '@/ai/genkit';
 
 
@@ -62,6 +62,6 @@ Generated Tasks:`;
 );
 
 export async function generateProjectTasks(brief: string) {
-  const result = await ai.run(generateProjectTasksFlow.name, { brief });
+  const result = await runFlow(generateProjectTasksFlow, { brief });
   return result.tasks;
 }
