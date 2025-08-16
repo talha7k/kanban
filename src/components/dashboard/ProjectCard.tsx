@@ -66,8 +66,8 @@ export function ProjectCard({
           className="line-clamp-2 min-h-[40px] break-words cursor-pointer"
         >
           {project.description || "No description available."}<div className="flex items-center space-x-2 mb-1">
-          <span className="text-xs font-medium text-blue-400 mt-2">
-            <Users2Icon className="mr-1.5 h-3.5 w-3.5" /> {project.memberIds?.length || 0}
+          <span className="flex text-xs font-bold text-blue-400 mt-2">
+            <Users2Icon className="mr-1.5 h-4 w-4" /> {project.memberIds?.length || 0}
           </span>
         </div>
         </CardDescription>
