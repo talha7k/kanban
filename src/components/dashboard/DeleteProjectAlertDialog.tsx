@@ -2,10 +2,12 @@ import React from "react";
 import { Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from "../ui/alert-dialog";
 
+import { Project } from "@/lib/types";
+
 interface DeleteProjectAlertDialogProps {
-  projectToDelete: { name: string } | null;
+  projectToDelete: Project | null;
   isDeletingProject: boolean;
-  setProjectToDelete: (project: { name: string } | null) => void;
+  setProjectToDelete: React.Dispatch<React.SetStateAction<Project | null>>;
   confirmDeleteProject: () => void;
 }
 

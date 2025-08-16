@@ -460,6 +460,7 @@ export default function DashboardPage() {
           project={projectToEdit}
           onEditProject={handleEditProjectSubmit}
           isSubmitting={isSubmittingProjectEdit}
+          onDeleteProject={openDeleteProjectDialog}
         />
       )}
       <DeleteProjectAlertDialog

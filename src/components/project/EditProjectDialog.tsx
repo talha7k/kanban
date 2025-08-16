@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Project, Team, TeamId } from '@/lib/types';
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from '@/hooks/useAuth';
 import { getTeamsForUser } from '@/lib/firebaseTeam';
@@ -37,6 +37,7 @@ interface EditProjectDialogProps {
   project: Project;
   onEditProject: (data: ProjectFormData) => Promise<void> | void;
   isSubmitting?: boolean;
+  onDeleteProject: (project: Project) => void;
 }
 
 
@@ -46,6 +47,7 @@ export function EditProjectDialog({
   project,
   onEditProject,
   isSubmitting,
+  onDeleteProject,
 }: EditProjectDialogProps) {
   const { currentUser } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
@@ -107,6 +109,16 @@ export function EditProjectDialog({
           <DialogDescription>
             Update your project&apos;s name, description, and team association. Click save when you&apos;re done.
           </DialogDescription>
+          <div className="flex justify-end">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDeleteProject(project)}
+              disabled={isSubmitting}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Project
+            </Button>
+          </div>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
           <div className="space-y-1">

@@ -24,6 +24,7 @@ export default function ProjectPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
   const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   useEffect(() => {
 
@@ -71,6 +72,10 @@ export default function ProjectPage() {
         setIsLoadingUsers(false);
     }
   }, [projectId, currentUser, toast]); // Keep params.projectId as dependency
+
+  const openDeleteProjectDialog = (project: Project) => {
+    setProjectToDelete(project);
+  };
 
   const handleEditProjectSubmit = async (data: { name: string; description?: string; teamId?: string | null }) => {
     if (!project || !currentUser || currentUser.uid !== project.ownerId) {
@@ -166,9 +171,12 @@ export default function ProjectPage() {
           onOpenChange={setIsEditProjectDialogOpen}
           project={project}
           onEditProject={handleEditProjectSubmit}
+          onDeleteProject={openDeleteProjectDialog}
           isSubmitting={isSubmittingProjectEdit}
         />
       )}
+
+   
     </div>
   );
 }
