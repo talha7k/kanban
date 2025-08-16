@@ -1,18 +1,27 @@
 import { z } from 'zod';
-import { defineFlow, generate, run } from '@genkit-ai/flow';
+import { defineFlow } from '@genkit-ai/flow';
+import { ai } from '@/ai/genkit';
 
-export const generateProjectTasksFlow = defineFlow({
-  name: 'generateProjectTasks',
-  inputSchema: z.object({
-    brief: z.string().describe('A brief description or list of requirements for the project tasks.'),
-  }),
-  outputSchema: z.object({
-    tasks: z.array(z.object({
-      title: z.string().describe('The title of the task.'),
-      description: z.string().describe('A detailed description for the task.'),
-    })).describe('An array of generated tasks.'),
-  }),
-  async execute(input: z.infer<typeof generateProjectTasksFlow.inputSchema>) {
+
+
+const GenerateProjectTasksInputSchema = z.object({
+  brief: z.string().describe('A brief description or list of requirements for the project tasks.'),
+});
+
+const GenerateProjectTasksOutputSchema = z.object({
+  tasks: z.array(z.object({
+    title: z.string().describe('The title of the task.'),
+    description: z.string().describe('A detailed description for the task.'),
+  })).describe('An array of generated tasks.'),
+});
+
+export const generateProjectTasksFlow = defineFlow(
+  {
+    name: 'generateProjectTasks',
+    inputSchema: GenerateProjectTasksInputSchema,
+    outputSchema: GenerateProjectTasksOutputSchema,
+  },
+  async input => {
     const prompt = `Based on the following brief, generate a list of distinct tasks for a project. Each task should have a concise title and a detailed description. Provide the output as a JSON array of objects with 'title' and 'description' keys.
 
 Brief: ${input.brief}
@@ -31,13 +40,13 @@ Example Output:
 
 Generated Tasks:`;
 
-    const llmResponse = await generate({
+    const llmResponse = await ai.generate({
       prompt: prompt,
       model: 'deepseek/deepseek-chat',
       config: { temperature: 0.7 },
     });
 
-    const text = llmResponse.text();
+    const text = llmResponse.text;
     try {
       const parsedTasks = JSON.parse(text);
       // Basic validation to ensure it's an array of objects with title and description
@@ -49,10 +58,10 @@ Generated Tasks:`;
       console.error('Failed to parse AI response as JSON:', text, e);
       throw new Error('Failed to parse AI response for tasks. Please try again.');
     }
-  },
-});
+  }
+);
 
 export async function generateProjectTasks(brief: string) {
-  const result = await run(generateProjectTasksFlow, { brief });
+  const result = await ai.run(generateProjectTasksFlow.name, { brief });
   return result.tasks;
 }

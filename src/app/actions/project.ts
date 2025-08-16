@@ -4,6 +4,7 @@ import { generateProjectTasks } from '@/ai/flows/generate-project-tasks';
 import { addTaskToProject } from '@/lib/firebaseTask';
 import { getProjectById } from '@/lib/firebaseProject';
 import type { NewTaskData } from '@/lib/types';
+import { generateTaskDetails, type GenerateTaskDetailsInput, type GenerateTaskDetailsOutput } from '@/ai/flows/generate-task-details';
 
 export async function generateTasksAction(projectId: string, brief: string, currentUserUid: string) {
   try {
@@ -36,5 +37,15 @@ export async function generateTasksAction(projectId: string, brief: string, curr
   } catch (error) {
     console.error("Error generating tasks in server action:", error);
     return { success: false, error: error instanceof Error ? error.message : "An unknown error occurred during task generation." };
+  }
+}
+
+export async function generateTaskDetailsAction(input: GenerateTaskDetailsInput): Promise<{ success: boolean; details?: GenerateTaskDetailsOutput; error?: string }> {
+  try {
+    const details = await generateTaskDetails(input);
+    return { success: true, details };
+  } catch (error) {
+    console.error("Error generating AI task details in server action:", error);
+    return { success: false, error: error instanceof Error ? error.message : "An unknown error occurred." };
   }
 }

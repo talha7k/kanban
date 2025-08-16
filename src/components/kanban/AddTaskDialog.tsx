@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import type { Task, UserProfile, AIPrioritySuggestion } from '@/lib/types';
 import { TaskFormFields, type TaskFormData } from './TaskFormFields';
-import { AIPrioritySuggestor } from "./AIPrioritySuggestor";
+import { AITaskDetailGenerator } from "./AITaskDetailGenerator";
 import { useState, useEffect } from "react"; 
 import { Loader2 } from "lucide-react";
 
@@ -111,15 +111,7 @@ export function AddTaskDialog({
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <TaskFormFields form={form} assignableUsers={assignableUsers} allTasksForDependencies={allTasksForDependencies} />
-          <AIPrioritySuggestor 
-            task={{
-              title: currentTaskDataForAI.title || '', 
-              description: currentTaskDataForAI.description || '',
-              dueDate: currentTaskDataForAI.dueDate,
-              dependentTaskTitles: currentTaskDataForAI.dependentTaskTitles,
-            }}
-            onSuggestion={handleAISuggestion}
-          />
+     
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>

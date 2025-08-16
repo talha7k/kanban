@@ -1,7 +1,8 @@
 "use client";
 
 import type { Task } from '@/lib/types';
-import { generateTaskDetails, type GenerateTaskDetailsInput, type GenerateTaskDetailsOutput } from '@/ai/flows/generate-task-details';
+import { type GenerateTaskDetailsInput, type GenerateTaskDetailsOutput } from '@/ai/flows/generate-task-details';
+import { generateTaskDetailsAction } from '@/app/actions/project';
 import { Button } from '@/components/ui/button';
 import { Wand2 } from 'lucide-react';
 import { useState } from 'react';
@@ -29,14 +30,20 @@ export function AITaskDetailGenerator({ briefInput, onDetailsGenerated }: AITask
     };
 
     try {
-      const result = await generateTaskDetails(input);
-      setGeneratedDetails(result);
-      if (onDetailsGenerated) {
-        onDetailsGenerated(result);
+      const response = await generateTaskDetailsAction(input);
+      if (response.success && response.details) {
+        setGeneratedDetails(response.details);
+        if (onDetailsGenerated) {
+          onDetailsGenerated(response.details);
+        }
+      } else if (response.error) {
+        throw new Error(response.error);
+      } else {
+        throw new Error("Unknown error during AI task details generation.");
       }
       toast({
         title: "AI Task Details Generated",
-        description: `Title: ${result.title}`,
+        description: `Title: ${response.details.title}`,
       });
     } catch (err) {
       console.error("Error generating AI task details:", err);

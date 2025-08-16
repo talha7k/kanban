@@ -19,7 +19,7 @@ import { CommentItem } from './CommentItem';
 import { useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { AIPrioritySuggestor } from './AIPrioritySuggestor';
+import { AITaskDetailGenerator } from './AITaskDetailGenerator';
 import { useToast } from '@/hooks/use-toast';
 
 interface TaskDetailsDialogProps {
@@ -111,7 +111,7 @@ export function TaskDetailsDialog({
                     <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment}>
                         <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructiveOutline" size="icon" onClick={() => { onDeleteTask(task.id);}} aria-label="Delete task" disabled={isSubmittingComment}>
+                    <Button variant="destructive" size="icon" onClick={() => { onDeleteTask(task.id);}} aria-label="Delete task" disabled={isSubmittingComment}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
@@ -201,9 +201,6 @@ export function TaskDetailsDialog({
                 </div>
               </div>
             )}
-
-             <AIPrioritySuggestor task={task} />
-
 
             <Separator className="my-4" />
 

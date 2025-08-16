@@ -16,7 +16,7 @@ import {
 import type { Task, UserProfile, AIPrioritySuggestion } from '@/lib/types';
 import { TaskFormFields, type TaskFormData } from './TaskFormFields';
 import { useEffect, useState } from "react";
-import { AIPrioritySuggestor } from "./AIPrioritySuggestor";
+import { AITaskDetailGenerator } from "./AITaskDetailGenerator";
 import { Loader2 } from "lucide-react";
 
 const taskFormSchema = z.object({
@@ -61,7 +61,7 @@ export function EditTaskDialog({
         description: taskToEdit.description || "",
         priority: taskToEdit.priority,
         assigneeUids: taskToEdit.assigneeUids || [],
-        dueDate: taskToEdit.dueDate,
+        dueDate: taskToEdit.dueDate || undefined,
         tags: taskToEdit.tags || [],
         dependentTaskTitles: taskToEdit.dependentTaskTitles || [],
       };
@@ -119,15 +119,7 @@ export function EditTaskDialog({
             allTasksForDependencies={allTasksForDependencies.filter(t => t.id !== taskToEdit.id)} 
             isEditing 
           />
-           <AIPrioritySuggestor 
-            task={{
-              title: currentTaskDataForAI.title || '',
-              description: currentTaskDataForAI.description || '',
-              dueDate: currentTaskDataForAI.dueDate,
-              dependentTaskTitles: currentTaskDataForAI.dependentTaskTitles,
-            }}
-            onSuggestion={handleAISuggestion}
-          />
+ 
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
