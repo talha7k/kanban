@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from './firebase';
 import type { UserProfile, UserDocument } from './types';
@@ -70,6 +70,87 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
     });
   } catch (error) {
     console.error('Error fetching all user profiles:', error);
+    throw error;
+  }
+};
+
+export const getUserProfilesByIds = async (userIds: string[]): Promise<UserProfile[]> => {
+  try {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    // Remove duplicates
+    const uniqueUserIds = [...new Set(userIds)];
+    const users: UserProfile[] = [];
+    const batchSize = 10; // Firebase 'in' operator limit
+    
+    for (let i = 0; i < uniqueUserIds.length; i += batchSize) {
+      const batch = uniqueUserIds.slice(i, i + batchSize);
+      const usersQuery = query(
+        collection(db, 'users'),
+        where(documentId(), 'in', batch)
+      );
+      
+      const querySnapshot = await getDocs(usersQuery);
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as UserDocument;
+        users.push({
+          id: doc.id,
+          ...data,
+          bio: data.bio || '',
+          title: data.title || '',
+        } as UserProfile);
+      });
+    }
+    
+    return users;
+  } catch (error) {
+    console.error('Error fetching user profiles by IDs:', error);
+    throw error;
+  }
+};
+
+export const getProjectRelevantUsers = async (projectId: string): Promise<UserProfile[]> => {
+  try {
+    // Get project to find its members and team
+    const projectRef = doc(db, 'projects', projectId);
+    const projectSnap = await getDoc(projectRef);
+    
+    if (!projectSnap.exists()) {
+      return [];
+    }
+    
+    const projectData = projectSnap.data();
+    const relevantUserIds = new Set<string>();
+    
+    // Add project owner
+    if (projectData.ownerId) {
+      relevantUserIds.add(projectData.ownerId);
+    }
+    
+    // Add project members
+    if (projectData.memberIds) {
+      projectData.memberIds.forEach((id: string) => relevantUserIds.add(id));
+    }
+    
+    // If project has a team, add team members
+    if (projectData.teamId) {
+      const teamRef = doc(db, 'teams', projectData.teamId);
+      const teamSnap = await getDoc(teamRef);
+      
+      if (teamSnap.exists()) {
+        const teamData = teamSnap.data();
+        if (teamData.memberIds) {
+          teamData.memberIds.forEach((id: string) => relevantUserIds.add(id));
+        }
+      }
+    }
+    
+    // Fetch all relevant users
+    return await getUserProfilesByIds(Array.from(relevantUserIds));
+  } catch (error) {
+    console.error('Error fetching project relevant users:', error);
     throw error;
   }
 };

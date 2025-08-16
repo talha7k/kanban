@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where, arrayUnion, arrayRemove, deleteDoc, documentId } from 'firebase/firestore';
 import { auth } from './firebase';
 import type { Team, UserId, UserProfile } from './types';
 
@@ -125,16 +125,25 @@ export const getTeamMembers = async (teamId: string): Promise<UserProfile[]> => 
       return [];
     }
 
-    // Fetch user profiles by document ID since user documents use document ID as the user ID
+    // Batch fetch all users in a single query using 'in' operator
+    // Firebase 'in' operator supports up to 10 values, so we need to batch if more than 10 members
     const members: UserProfile[] = [];
-    for (const memberId of memberIds) {
-      const userRef = doc(db, 'users', memberId);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        members.push({ id: userSnap.id, ...userData } as UserProfile);
-      }
+    const batchSize = 10;
+    
+    for (let i = 0; i < memberIds.length; i += batchSize) {
+      const batch = memberIds.slice(i, i + batchSize);
+      const usersQuery = query(
+        collection(db, 'users'),
+        where(documentId(), 'in', batch)
+      );
+      
+      const querySnapshot = await getDocs(usersQuery);
+      querySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        members.push({ id: doc.id, ...userData } as UserProfile);
+      });
     }
+    
     return members;
   } catch (error) {
     console.error('Error fetching team members:', error);

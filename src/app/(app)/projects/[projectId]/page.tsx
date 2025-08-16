@@ -2,7 +2,7 @@
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import type { Project, UserProfile, NewTaskData, Task } from "@/lib/types";
 import { useEffect, useState } from "react";
-import { getAllUserProfiles } from "@/lib/firebaseUser";
+import { getProjectRelevantUsers } from "@/lib/firebaseUser";
 import { getProjectById, updateProjectDetails, deleteProject } from "@/lib/firebaseProject";
 import { addTaskToProject } from "@/lib/firebaseTask";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,7 +47,7 @@ export default function ProjectPage() {
         try {
           const [fetchedProject, fetchedUsers] = await Promise.all([
             getProjectById(projectId as string),
-            getAllUserProfiles(),
+            getProjectRelevantUsers(projectId as string),
           ]);
 
           if (fetchedProject) {
