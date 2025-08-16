@@ -3,7 +3,7 @@ import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import type { Project, UserProfile, NewTaskData, Task } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { getAllUserProfiles } from "@/lib/firebaseUser";
-import { getProjectById, updateProjectDetails } from "@/lib/firebaseProject";
+import { getProjectById, updateProjectDetails, deleteProject } from "@/lib/firebaseProject";
 import { addTaskToProject } from "@/lib/firebaseTask";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -17,11 +17,12 @@ import {
   generateTasksAction,
   addApprovedTasksAction,
 } from "@/app/actions/project";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 export default function ProjectPage() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const { projectId } = useParams();
+  const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
@@ -32,7 +33,7 @@ export default function ProjectPage() {
   const [isGenerateTasksDialogOpen, setIsGenerateTasksDialogOpen] =
     useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
   const [isAddingTasks, setIsAddingTasks] = useState(false);
@@ -98,7 +99,6 @@ export default function ProjectPage() {
 
   const openDeleteProjectDialog = (project: Project) => {
     setProjectToDelete(project);
-    setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteProject = async () => {
@@ -113,14 +113,12 @@ export default function ProjectPage() {
 
     setIsDeletingProject(true);
     try {
-      // Assuming you have a deleteProject function in firebaseProject.ts
-      // await deleteProject(projectToDelete.id);
+      await deleteProject(projectToDelete.id);
       toast({
         title: "Project Deleted",
         description: `"${projectToDelete.name}" has been successfully deleted.`, 
       });
-      // Redirect to dashboard or appropriate page after deletion
-      // router.push('/team-dashboard'); // You might need to import useRouter from 'next/navigation'
+      router.push('/team-dashboard');
     } catch (error) {
       console.error("Error deleting project:", error);
       const errorMessage =
@@ -132,7 +130,6 @@ export default function ProjectPage() {
       });
     } finally {
       setIsDeletingProject(false);
-      setIsDeleteDialogOpen(false);
       setProjectToDelete(null);
     }
   };
@@ -354,11 +351,10 @@ export default function ProjectPage() {
 
       {projectToDelete && (
         <DeleteProjectAlertDialog
-          isOpen={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-          projectName={projectToDelete.name}
-          onConfirmDelete={handleDeleteProject}
-          isDeleting={isDeletingProject}
+          projectToDelete={projectToDelete}
+          isDeletingProject={isDeletingProject}
+          setProjectToDelete={setProjectToDelete}
+          confirmDeleteProject={handleDeleteProject}
         />
       )}
 

@@ -159,7 +159,17 @@ export function EditProjectDialog({
             )}
           </div>
           <DialogFooter>
-             
+             <Button
+              variant="destructive"
+              className="my-4 sm:my-0 sm:mr-[15%]"
+              onClick={() => {
+                onOpenChange(false); // Close edit dialog first
+                onDeleteProject(project); // Then open delete dialog
+              }}
+              disabled={isSubmitting}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+            </Button>
             <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isSubmitting}>
               Cancel
             </Button>
@@ -167,14 +177,7 @@ export function EditProjectDialog({
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save Changes
             </Button>
-            <Button
-              variant="destructive"
-              className="my-4 sm:my-0"
-              onClick={() => onDeleteProject(project)}
-              disabled={isSubmitting}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Project
-            </Button>
+            
           </DialogFooter>
         </form>
       </DialogContent>
