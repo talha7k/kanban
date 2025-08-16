@@ -86,7 +86,7 @@ export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
               Team Members
             </h4>
             <div className="space-y-1 max-h-20 overflow-y-auto">
-              {team.members.slice(0, 3).map((member) => (
+              {team.members.slice(0, 7).map((member) => (
                 <div
                   key={member.id}
                   className="flex items-center gap-2 text-sm"
@@ -100,9 +100,9 @@ export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
                   )}
                 </div>
               ))}
-              {team.members.length > 3 && (
+              {team.members.length > 7 && (
                 <div className="text-xs text-gray-500 pl-8">
-                  +{team.members.length - 3} more members
+                  +{team.members.length - 7} more members
                 </div>
               )}
             </div>
@@ -110,19 +110,20 @@ export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
         )}
 
         <div className="flex gap-2 pt-2 w-full">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/teams/${team.id}`);
-            }}
-          >
-            <Settings className="w-4 h-4 mr-1" />
-            Manage
-          </Button>
-
+          {isOwner && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/teams/${team.id}`);
+              }}
+            >
+              <Settings className="w-4 h-4 mr-1" />
+              Manage
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

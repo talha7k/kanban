@@ -57,6 +57,17 @@ export default function TeamDetailPage() {
       if (fetchedTeam) {
         setNewTeamName(fetchedTeam.name);
         setNewTeamDescription(fetchedTeam.description || '');
+
+        // Check if current user is the owner
+        if (fetchedTeam.ownerId !== currentUser?.uid) {
+          toast({
+            variant: 'destructive',
+            title: 'Access Denied',
+            description: 'You do not have permission to view this team page.',
+          });
+          router.push('/team-dashboard');
+          return;
+        }
       }
     } catch (error) {
       console.error('Error fetching team details:', error);
