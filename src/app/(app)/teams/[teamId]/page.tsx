@@ -265,10 +265,12 @@ export default function TeamDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">{team.name}</h1>
-        <div>
+    <div className="mx-auto p-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+        <div className="flex w-full">
+          <h1 className="text-3xl font-bold mb-3 sm:mb-0">{team.name}</h1>
+        </div>
+        <div className="flex">
           <Button variant="secondary" onClick={() => setIsEditTeamDialogOpen(true)} className="mr-2">
             Edit Team
           </Button>
