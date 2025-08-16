@@ -1,8 +1,5 @@
 import { z } from 'zod';
-import { defineFlow, runFlow } from '@genkit-ai/flow';
 import { ai } from '@/ai/genkit';
-
-
 
 const GenerateProjectTasksInputSchema = z.object({
   brief: z.string().describe('A brief description or list of requirements for the project tasks.'),
@@ -15,7 +12,7 @@ const GenerateProjectTasksOutputSchema = z.object({
   })).describe('An array of generated tasks.'),
 });
 
-export const generateProjectTasksFlow = defineFlow(
+export const generateProjectTasksFlow = ai.defineFlow(
   {
     name: 'generateProjectTasks',
     inputSchema: GenerateProjectTasksInputSchema,
@@ -62,6 +59,6 @@ Generated Tasks:`;
 );
 
 export async function generateProjectTasks(brief: string) {
-  const result = await runFlow(generateProjectTasksFlow, { brief });
+  const result = await generateProjectTasksFlow({ brief });
   return result.tasks;
 }
