@@ -1,5 +1,6 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
+import { Button } from "../ui/button";
 import { Users, Loader2, Crown, Briefcase, ShieldCheck, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
@@ -11,8 +12,7 @@ interface User {
   id: string;
   name?: string | null;
   email?: string | null;
-  avatarUrl?: string | null;
-  role?: string | null;
+  avatarUrl?: string | null; 
   title?: string | null;
 }
 
@@ -25,6 +25,7 @@ interface TeamUsersCardProps {
   allUsers: User[];
   selectedTeam: Team | null;
   selectedProject?: Project | null; // Optional project for viewing project-specific roles
+  onClearSelectedProject?: () => void; // Callback to clear selected project
 }
 
 export function TeamUsersCard({
@@ -32,6 +33,7 @@ export function TeamUsersCard({
   allUsers,
   selectedTeam,
   selectedProject,
+  onClearSelectedProject,
 }: TeamUsersCardProps) {
   // Filter users based on context (team or project)
   const displayUsers = selectedProject 
@@ -43,9 +45,9 @@ export function TeamUsersCard({
 
   const getDisplayTitle = () => {
     if (selectedProject) {
-      return `Project Members: ${selectedProject.name}`;
+      return ` ${selectedProject.name}`;
     }
-    return "Users";
+    return "Team";
   };
 
   const getDisplayDescription = () => {
@@ -73,15 +75,15 @@ export function TeamUsersCard({
       }
       // For regular team members, show their general role or "Member"
       return { 
-        role: user.role ? user.role : "Member", 
-        variant: user.role === "admin" ? "default" : "secondary" 
+        role:   "Member", 
+        variant:  "secondary" 
       };
     }
   };
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg p-4">
       <CardHeader>
-        <CardTitle className="flex items-center text-2xl">
+        <CardTitle className="flex items-center text-2xl mb-2">
           <Users className="mr-3 h-7 w-7 text-accent" />
           {getDisplayTitle()} (
           {isLoadingUsers ? (
@@ -91,6 +93,16 @@ export function TeamUsersCard({
           )}
           )
         </CardTitle>
+        {selectedProject && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClearSelectedProject}
+            className="text-sm text-muted-foreground"
+          >
+            Clear Project Filter
+          </Button>
+        )}
         <CardDescription>{getDisplayDescription()}</CardDescription>
       </CardHeader>
       <CardContent>

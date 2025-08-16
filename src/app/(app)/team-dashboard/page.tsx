@@ -424,11 +424,12 @@ export default function DashboardPage() {
         </Card>
 
         <TeamUsersCard
-          isLoadingUsers={isLoadingUsers}
-          allUsers={allUsers}
-          selectedTeam={selectedTeam}
-          selectedProject={selectedProjectForMembers}
-        />
+            isLoadingUsers={isLoadingUsers}
+            allUsers={allUsers}
+            selectedTeam={selectedTeam}
+            selectedProject={selectedProjectForMembers}
+            onClearSelectedProject={() => setSelectedProjectForMembers(null)}
+          />
       </div>
 
       {currentUser && (

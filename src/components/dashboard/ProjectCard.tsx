@@ -69,29 +69,7 @@ export function ProjectCard({
       </CardHeader>
       <CardFooter className="flex flex-col items-start space-y-3 border-t">
         <div className="flex items-center space-x-2 mb-1">
-          {(project.memberIds || []).slice(0, 3).map((memberId) => {
-            const member = allUsers.find((u) => u.id === memberId);
-            return member ? (
-              <Avatar key={member.id} className="h-6 w-6 border-2 border-card">
-                <AvatarImage
-                  src={member.avatarUrl}
-                  alt={member.name}
-                  data-ai-hint="profile small"
-                />
-                <AvatarFallback>
-                  {member.name?.substring(0, 1).toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-            ) : null;
-          })}
-          {(project.memberIds?.length || 0) > 3 && (
-            <Avatar className="h-6 w-6 border-2 border-card">
-              <AvatarFallback>
-                +{(project.memberIds?.length || 0) - 3}
-              </AvatarFallback>
-            </Avatar>
-          )}
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-blue-400 mt-2">
             {project.memberIds?.length || 0} Member(s)
           </span>
         </div>
