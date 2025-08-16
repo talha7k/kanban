@@ -356,11 +356,18 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto py-8 px-4 sm:px-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-        <div className="flex items-center justify-between w-full  ">
+      <div className="flex flex-row flex-wrap  justify-between items-center mb-8 gap-4">
+        <div className="flex">
           <h1 className="text-3xl font-bold">
             {selectedTeam?.name || "Dashboard"}
           </h1>
+        </div>
+        <div className="flex flex-row items-center  gap-4 mx-auto md:mx-0">
+          {currentUser && (
+            <Button onClick={() => setIsCreateProjectDialogOpen(true)}>
+              <PlusCircle className="mr-2 h-5 w-5" /> Create New Project
+            </Button>
+          )}{" "}
           <Link href="/teams">
             <Button variant="secondary">
               <Users className="mr-2 h-4 w-4" />
@@ -368,11 +375,6 @@ export default function DashboardPage() {
             </Button>
           </Link>
         </div>
-        {currentUser && (
-          <Button onClick={() => setIsCreateProjectDialogOpen(true)}>
-            <PlusCircle className="mr-2 h-5 w-5" /> Create New Project
-          </Button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -424,12 +426,12 @@ export default function DashboardPage() {
         </Card>
 
         <TeamUsersCard
-            isLoadingUsers={isLoadingUsers}
-            allUsers={allUsers}
-            selectedTeam={selectedTeam}
-            selectedProject={selectedProjectForMembers}
-            onClearSelectedProject={() => setSelectedProjectForMembers(null)}
-          />
+          isLoadingUsers={isLoadingUsers}
+          allUsers={allUsers}
+          selectedTeam={selectedTeam}
+          selectedProject={selectedProjectForMembers}
+          onClearSelectedProject={() => setSelectedProjectForMembers(null)}
+        />
       </div>
 
       {currentUser && (

@@ -79,7 +79,7 @@ export function ProjectCard({
             size="sm"
             onClick={() => openViewMembersDialog(project)}
           >
-            <Eye className="mr-1.5 h-3.5 w-3.5" /> View Members
+            <Eye className="mr-1.5 h-3.5 w-3.5" /> Members
           </Button>
           {currentUserUid === project.ownerId && (
             <>
