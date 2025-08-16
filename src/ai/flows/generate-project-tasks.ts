@@ -5,6 +5,7 @@ import { ai } from '@/ai/genkit';
 
 const GenerateProjectTasksInputSchema = z.object({
   brief: z.string().describe('A brief description or list of requirements for the project tasks.'),
+  taskCount: z.number().min(1).max(5).describe('The number of tasks to generate (1-5).'),
 });
 export type GenerateProjectTasksInput = z.infer<
   typeof GenerateProjectTasksInputSchema
@@ -20,7 +21,7 @@ const prompt = ai.definePrompt({
   name: 'generateProjectTasksPrompt',
   input: {schema: GenerateProjectTasksInputSchema},
   output: {schema: GenerateProjectTasksOutputSchema},
-  prompt: `Based on the following brief, generate a list of distinct tasks for a project. Each task should have a concise title and a detailed description.\n\nBrief: {{{brief}}}\n`,
+  prompt: `Based on the following brief, generate exactly {{{taskCount}}} distinct tasks for a project. Each task should have a concise title and a detailed description.\n\nBrief: {{{brief}}}\nNumber of tasks to generate: {{{taskCount}}}\n`,
 });
 
 export const generateProjectTasksFlow = ai.defineFlow(
@@ -35,7 +36,7 @@ export const generateProjectTasksFlow = ai.defineFlow(
   }
 );
 
-export async function generateProjectTasks(brief: string) {
-  const result = await generateProjectTasksFlow({ brief });
+export async function generateProjectTasks(brief: string, taskCount: number = 3) {
+  const result = await generateProjectTasksFlow({ brief, taskCount });
   return result.tasks;
 }

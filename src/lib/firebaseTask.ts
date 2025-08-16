@@ -4,9 +4,11 @@ import type { Task, NewTaskData, ColumnId, ProjectDocument, Comment, NewCommentD
 import { v4 as uuidv4 } from 'uuid';
 
 // Task Functions
-export const addTaskToProject = async (projectId: string, taskData: NewTaskData, columnId: ColumnId): Promise<Task> => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
+export const addTaskToProject = async (projectId: string, taskData: NewTaskData, columnId: ColumnId, currentUserUid?: string): Promise<Task> => {
+  // For server actions, currentUserUid is passed as parameter
+  // For client-side calls, use auth.currentUser
+  const userUid = currentUserUid || auth.currentUser?.uid;
+  if (!userUid) {
     throw new Error("User must be authenticated to add tasks.");
   }
 

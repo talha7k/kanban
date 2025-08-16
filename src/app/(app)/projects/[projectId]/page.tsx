@@ -101,11 +101,11 @@ export default function ProjectPage() {
     }
   };
 
-  const handleGenerateTasks = async (brief: string) => {
+  const handleGenerateTasks = async (brief: string, taskCount: number) => {
     if (!project) return;
     setIsGeneratingTasks(true);
     try {
-      const result = await generateTasksAction(project.id, brief, currentUser!.uid);
+      const result = await generateTasksAction(project.id, brief, currentUser!.uid, taskCount);
 
       if (result.success) {
         if (result.updatedProject) {

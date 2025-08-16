@@ -6,9 +6,9 @@ import { getProjectById } from '@/lib/firebaseProject';
 import type { NewTaskData } from '@/lib/types';
 import { generateTaskDetails, type GenerateTaskDetailsInput, type GenerateTaskDetailsOutput } from '@/ai/flows/generate-task-details';
 
-export async function generateTasksAction(projectId: string, brief: string, currentUserUid: string) {
+export async function generateTasksAction(projectId: string, brief: string, currentUserUid: string, taskCount: number = 3) {
   try {
-    const generatedTasks = await generateProjectTasks(brief);
+    const generatedTasks = await generateProjectTasks(brief, taskCount);
     const project = await getProjectById(projectId);
 
     if (!project) {
@@ -27,7 +27,7 @@ export async function generateTasksAction(projectId: string, brief: string, curr
           createdAt: new Date().toISOString(),
           order: 0,
         };
-        await addTaskToProject(project.id, newTaskPayload, defaultColumnId);
+        await addTaskToProject(project.id, newTaskPayload, defaultColumnId, currentUserUid);
       }
     }
 
