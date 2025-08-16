@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+  /* Custom scrollbar for Webkit browsers (Chrome, Safari) */
+  &::-webkit-scrollbar {
+    width: 8px; /* Thin scrollbar */
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent; /* Transparent track */
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: hsl(210 98% 83%); /* blue-300 equivalent */
+    border-radius: 10px; /* Rounded thumb */
+    border: 2px solid transparent; /* Creates a thin border effect */
+    background-clip: padding-box;
+  }
+
+  /* Custom scrollbar for Firefox */
+  scrollbar-width: thin; /* Thin scrollbar */
+  scrollbar-color: hsl(210 98% 83%) transparent; /* blue-300 thumb, transparent track */
+}
+
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

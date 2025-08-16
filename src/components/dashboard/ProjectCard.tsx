@@ -44,10 +44,12 @@ export function ProjectCard({
   return (
     <Card
       key={project.id}
-      className="bg-primary/5 hover:shadow-lg transition-shadow cursor-pointer hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100"
-      onClick={() => window.location.href = `/projects/${project.id}`}
+      className="bg-primary/5 hover:shadow-lg transition-shadow  hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100"
     >
-      <CardHeader className="pb-3">
+      <CardHeader
+        onClick={() => (window.location.href = `/projects/${project.id}`)}
+        className="pb-3 cursor-pointer"
+      >
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{project.name}</CardTitle>
           {currentUserUid === project.ownerId && (
@@ -56,11 +58,14 @@ export function ProjectCard({
             </Badge>
           )}
         </div>
-        <CardDescription className="line-clamp-2 min-h-[40px] break-words">
+        <CardDescription
+          onClick={() => (window.location.href = `/projects/${project.id}`)}
+          className="line-clamp-2 min-h-[40px] break-words cursor-pointer"
+        >
           {project.description || "No description available."}
         </CardDescription>
       </CardHeader>
-      <CardFooter className="flex flex-col items-start space-y-3">
+      <CardFooter className="flex flex-col items-start space-y-3 border-t">
         <div className="flex items-center space-x-2 mb-1">
           {(project.memberIds || []).slice(0, 3).map((memberId) => {
             const member = allUsers.find((u) => u.id === memberId);
@@ -91,7 +96,6 @@ export function ProjectCard({
         <div className="flex flex-wrap gap-2">
           {currentUserUid === project.ownerId && (
             <>
-
               <Button
                 variant="outline"
                 size="sm"
@@ -108,7 +112,6 @@ export function ProjectCard({
               </Button>
             </>
           )}{" "}
-
         </div>
       </CardFooter>
     </Card>

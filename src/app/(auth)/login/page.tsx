@@ -58,7 +58,7 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="w-full max-w-md shadow-2xl">
+    <Card className="w-full max-w-md shadow-2xl p-4">
       <CardHeader className="items-center text-center">
         <KanbanIcon className="w-12 h-12 text-primary mb-2" />
         <CardTitle className="text-2xl">Welcome Back!</CardTitle>
