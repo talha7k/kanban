@@ -4,7 +4,7 @@ import { auth, db } from './firebase';
 import type { UserProfile, UserDocument } from './types';
 
 // User Profile Functions
-export const createUserProfileDocument = async (userAuth: FirebaseUser, additionalData?: Partial<Pick<UserProfile, 'name' | 'title'>>) => {
+export const createUserProfileDocument = async (userAuth: FirebaseUser, additionalData?: Partial<Pick<UserProfile, 'name' | 'title' | 'bio'>>) => {
   if (!userAuth) return;
   const userRef = doc(db, `users/${userAuth.uid}`);
   const snapshot = await getDoc(userRef);
@@ -18,8 +18,8 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
         name: additionalData?.name || displayName || email?.split('@')[0] || 'New User',
         email: email || '',
         avatarUrl: photoURL || `https://placehold.co/40x40.png?text=${(additionalData?.name || displayName || email || 'U').substring(0,1).toUpperCase()}`,
-        role: 'staff', // Default global role
-        title: additionalData?.title || 'Team Member', // Default title
+        bio: additionalData?.bio || '', // Default bio
+        title: additionalData?.title || '', // Default title
         createdAt,
       };
       const { ...profileToSave } = newUserProfile;
@@ -34,8 +34,8 @@ export const createUserProfileDocument = async (userAuth: FirebaseUser, addition
   return {
     id: snapshot.id,
     ...existingData,
-    role: existingData.role || 'staff',
-    title: existingData.title || 'Team Member',
+    bio: existingData.bio || '',
+    title: existingData.title || '',
    } as UserProfile;
 };
 
@@ -48,8 +48,8 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     return {
       id: snapshot.id,
       ...data,
-      role: data.role || 'staff',
-      title: data.title || 'Team Member',
+      bio: data.bio || '',
+      title: data.title || '',
     } as UserProfile;
   }
   return null;
@@ -64,8 +64,8 @@ export const getAllUserProfiles = async (): Promise<UserProfile[]> => {
       return {
         id: doc.id,
         ...data,
-        role: data.role || 'staff',
-        title: data.title || 'Team Member',
+        bio: data.bio || '',
+        title: data.title || '',
       } as UserProfile;
     });
   } catch (error) {
@@ -86,7 +86,7 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
       return {
         id: doc.id,
         ...data,
-        role: data.role || 'staff',
+        bio: data.bio || 'Hi, it\'s me! I\'m a team member. I\'m here to help.',
         title: data.title || 'Team Member',
       } as UserProfile;
     }
@@ -97,7 +97,7 @@ export const getUserProfileByEmail = async (email: string): Promise<UserProfile 
   }
 };
 
-export const updateUserProfile = async (userId: string, data: { name?: string, title?: string, avatarUrl?: string }): Promise<void> => {
+export const updateUserProfile = async (userId: string, data: { name?: string, title?: string, avatarUrl?: string, bio?: string }): Promise<void> => {
   const currentUser = auth.currentUser;
   if (!currentUser || currentUser.uid !== userId) {
     throw new Error("User must be authenticated and can only update their own profile.");
@@ -108,6 +108,7 @@ export const updateUserProfile = async (userId: string, data: { name?: string, t
     if (data.name !== undefined) updateData.name = data.name;
     if (data.title !== undefined) updateData.title = data.title;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+    if (data.bio !== undefined) updateData.bio = data.bio;
 
     if (Object.keys(updateData).length === 0) {
         return; // No changes to update

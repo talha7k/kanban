@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const profileFormSchema = z.object({
   name: z.string().min(1, "Name is required").max(50, "Name must be 50 characters or less."),
   title: z.string().max(50, "Title must be 50 characters or less.").optional(),
+  bio: z.string().max(200, "Bio must be 200 characters or less.").optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
@@ -40,6 +41,7 @@ export default function ProfilePage() {
       form.reset({
         name: userProfile.name || '',
         title: userProfile.title || '',
+        bio: userProfile.bio || '',
       });
     }
   }, [userProfile, form]);
@@ -54,6 +56,7 @@ export default function ProfilePage() {
       await updateUserProfile(currentUser.uid, {
         name: data.name,
         title: data.title || '', // Send empty string if undefined
+        bio: data.bio || '',
       });
       toast({ title: "Profile Updated!", description: "Your profile has been successfully updated." });
       await refreshUserProfile(); // Refresh context to update UI immediately
@@ -136,13 +139,18 @@ export default function ProfilePage() {
                 <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>
               )}
             </div>
-             {userProfile && (
-                <div className="space-y-1.5">
-                    <Label htmlFor="role">Global Role</Label>
-                    <Input id="role" type="text" value={userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)} disabled className="bg-muted/50" />
-                     <p className="text-xs text-muted-foreground">Global roles are managed by administrators.</p>
-                </div>
-            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="bio">Bio</Label>
+              <Input 
+                id="bio" 
+                {...form.register("bio")} 
+                placeholder="Tell us about yourself" 
+                disabled={isSubmitting}
+              />
+              {form.formState.errors.bio && (
+                <p className="text-xs text-destructive">{form.formState.errors.bio.message}</p>
+              )}
+            </div>
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={isSubmitting || authLoading}>

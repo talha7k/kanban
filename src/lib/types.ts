@@ -11,7 +11,7 @@ export interface UserProfile {
   name: string; // Firebase displayName or mock name
   email?: string; // Firebase email
   avatarUrl?: string; // Firebase photoURL or mock avatar
-  role: "admin" | "staff"; // Global role for the user in the system
+  bio?: string; // User's biography or description
   title?: string; // New field for user title/position
   createdAt?: string; // ISO string, from Firestore
   teamIds?: TeamId[]; // Teams the user belongs to
@@ -113,7 +113,7 @@ export interface UserDocument {
   name: string;
   email?: string;
   avatarUrl?: string;
-  role: "admin" | "staff";
+  bio?: string;
   title?: string;
   createdAt?: string;
   teamIds?: TeamId[];
