@@ -355,9 +355,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6">
+    <div className="mx-auto py-8 px-4 sm:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between w-full  ">
           <h1 className="text-3xl font-bold">
             {selectedTeam?.name || "Dashboard"}
           </h1>

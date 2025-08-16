@@ -81,7 +81,7 @@ export function TeamUsersCard({
     }
   };
   return (
-    <Card className="shadow-lg p-4">
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center text-2xl mb-2">
           <Users className="mr-3 h-7 w-7 text-accent" />
