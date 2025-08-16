@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { KanbanIcon } from "@/components/icons/KanbanIcon"; // Assuming you have this
-import { UsersIcon, LockIcon, MessageSquareIcon, EditIcon, MoveIcon, RocketIcon } from 'lucide-react';
+import {
+  UsersIcon,
+  LockIcon,
+  MessageSquareIcon,
+  EditIcon,
+  MoveIcon,
+  RocketIcon,
+} from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -54,55 +61,55 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1: Project Creation & Role-Based Access */}
+            {/* Feature 1: Team Creation & Management */}
+            <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+              <UsersIcon className="w-12 h-12 text-primary mb-4" />
+              <h3 className="text-2xl font-semibold mb-3">
+                Effortless Team Management
+              </h3>
+              <p className="text-muted-foreground">
+                Create and manage multiple teams with ease. Each team can have
+                multiple members that will get exclusive access to the projects
+                created for that team.
+              </p>
+            </div>
+
+            {/* Feature 2: Team Invitations */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
               <RocketIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
-                Effortless Project Setup
+                Seamless Onboarding
               </h3>
               <p className="text-muted-foreground">
-                Launch new web projects in minutes. Assign team members with
-                specific roles like 'Manager' or 'Developer' right from the
-                start, ensuring everyone has the right access.
+                Invite new members to your teams by having them registered on
+                DijiKanban. Expand your collaborative workspace and bring all
+                your team members together under one roof.
               </p>
             </div>
 
-            {/* Feature 2: Granular Task Control */}
+            {/* Feature 3: Project Creation within Teams */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
               <EditIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
-                Precision Task Management
+                Organize with Projects
               </h3>
               <p className="text-muted-foreground">
-                Managers wield full control to edit and delete tasks,
-                maintaining project integrity. Developers focus on execution,
-                knowing exactly what's assigned to them.
+                Everyone in the team cannot have access to all the projects.
+                Create dedicated projects to segment your team. Each project
+                acts as a focused workspace for specific members assigned to it.
               </p>
             </div>
 
-            {/* Feature 3: Secure & Focused Boards */}
-            <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              <LockIcon className="w-12 h-12 text-primary mb-4" />
-              <h3 className="text-2xl font-semibold mb-3">
-                Secure Project Workspaces
-              </h3>
-              <p className="text-muted-foreground">
-                Your project boards are your team's private command center. Only
-                members added to a project can view its tasks and progress,
-                keeping sensitive information confidential.
-              </p>
-            </div>
-
-            {/* Feature 4: Intuitive Task Movement */}
+            {/* Feature 4: Task Management within Projects */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
               <MoveIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
-                Fluid Kanban Workflow
+                Detailed Task Tracking
               </h3>
               <p className="text-muted-foreground">
-                Empower assigned users to drag-and-drop tasks across
-                customizable columns. Visualizing progress and adapting to
-                changes has never been smoother.
+                Break down projects into manageable tasks. Assign tasks to team
+                members, set deadlines, and track progress from creation to
+                completion, ensuring nothing falls through the cracks.
               </p>
             </div>
 
@@ -119,16 +126,16 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Feature 6: Total Team Visibility (for managers) */}
+            {/* Feature 6: Clear Oversight & Progress */}
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              <UsersIcon className="w-12 h-12 text-primary mb-4" />
+              <LockIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">
-                Clear Oversight & Progress
+                Secure & Focused Work
               </h3>
               <p className="text-muted-foreground">
-                Visualize your team's entire workflow, identify bottlenecks, and
-                celebrate milestones. Understand project health at a glance and
-                keep development on track.
+                Your teams and projects are secure. Only invited members can
+                access their respective workspaces, keeping sensitive
+                information confidential and workflows streamlined.
               </p>
             </div>
           </div>
@@ -140,29 +147,29 @@ export default function HomePage() {
         <div className="container mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Get Productive in{" "}
-            <span className="text-primary">3 Simple Steps</span>
+            <span className="text-primary">4 Simple Steps</span>
           </h2>
-          <div className="grid md:grid-cols-3 gap-8 mt-12 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 mt-12 max-w-4xl mx-auto">
             <div className="flex flex-col items-center">
               <div className="bg-primary text-primary-foreground rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mb-4">
                 1
               </div>
-              <h3 className="text-xl font-semibold mb-2">
-                Create Your Project
-              </h3>
+              <h3 className="text-xl font-semibold mb-2">Create Your Team</h3>
               <p className="text-muted-foreground">
-                Define your goals and set up your first board.
+                Think about how to create a team that fits your needs. You can
+                have many!
               </p>
-            </div>
+            </div>{" "}
             <div className="flex flex-col items-center">
               <div className="bg-primary text-primary-foreground rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mb-4">
                 2
               </div>
               <h3 className="text-xl font-semibold mb-2">
-                Invite Your Team & Assign Roles
+                Create Your Project
               </h3>
               <p className="text-muted-foreground">
-                Bring your colleagues onboard and set permissions.
+                Define your goals and set up your first board. Don't forget to
+                assign members to the project.
               </p>
             </div>
             <div className="flex flex-col items-center">
@@ -170,7 +177,19 @@ export default function HomePage() {
                 3
               </div>
               <h3 className="text-xl font-semibold mb-2">
-                Start Collaborating & Tracking
+                Invite Your Team
+              </h3>
+              <p className="text-muted-foreground">
+                Ask members to register and share their email to be added to
+                team.
+              </p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="bg-primary text-primary-foreground rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mb-4">
+                4
+              </div>
+              <h3 className="text-xl font-semibold mb-2">
+                Start Collaborating 
               </h3>
               <p className="text-muted-foreground">
                 Move tasks, add comments, and watch progress unfold.
