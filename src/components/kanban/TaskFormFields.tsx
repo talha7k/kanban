@@ -15,7 +15,10 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import { cn } from '@/lib/utils';
-import React from 'react';
+import React, { useState } from 'react';
+import { AITaskDetailGenerator } from './AITaskDetailGenerator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sparkles } from 'lucide-react';
 
 export interface TaskFormData {
   title: string;
@@ -35,15 +38,49 @@ interface TaskFormFieldsProps {
 }
 
 export function TaskFormFields({ form, assignableUsers, allTasksForDependencies }: TaskFormFieldsProps) {
-  const { register, control, watch } = form;
+  const { register, control, watch, setValue } = form;
 
   const selectedAssignees = watch('assigneeUids') || [];
   const selectedDependencies = watch('dependentTaskTitles') || [];
+  const [aiBrief, setAiBrief] = useState('');
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+
+  const handleAIDetailsGenerated = (details: { title: string; description: string }) => {
+    setValue('title', details.title);
+    setValue('description', details.description);
+    setIsAiDialogOpen(false);
+  };
 
   return (
     <div className="grid gap-4 py-4">
       <div className="space-y-1">
-        <Label htmlFor="title">Title</Label>
+        <div className="flex justify-between items-center">
+          <Label htmlFor="title">Title</Label>
+          <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="ml-2">
+                <Sparkles className="mr-2 h-4 w-4" /> AI Generate
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Generate Task Details with AI</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-1">
+                  <Label htmlFor="ai-brief">Brief Input</Label>
+                  <Textarea
+                    id="ai-brief"
+                    value={aiBrief}
+                    onChange={(e) => setAiBrief(e.target.value)}
+                    placeholder="e.g., Create a new user authentication module with OAuth2 support."
+                  />
+                </div>
+                <AITaskDetailGenerator briefInput={aiBrief} onDetailsGenerated={handleAIDetailsGenerated} />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         <Input id="title" {...register('title')} placeholder="e.g., Implement feature X" />
         {form.formState.errors.title && <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>}
       </div>

@@ -89,6 +89,32 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     return tasksToFilter;
   }, [projectData, currentUser, taskViewFilter]);
 
+  const handleUpdateTask = async (taskId: string, updatedFields: Partial<Task>) => {
+    if (!canManageTasks) {
+      toast({ variant: "destructive", title: "Permission Denied", description: "You do not have permission to update tasks." });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const updatedTask = await updateTaskInProject(projectData.id, taskId, updatedFields);
+      setProjectData(prevProject => {
+        if (!prevProject) return prevProject;
+        return {
+          ...prevProject,
+          tasks: prevProject.tasks.map(task =>
+            task.id === taskId ? { ...task, ...updatedTask } : task
+          ),
+        };
+      });
+      toast({ title: "Task Updated", description: `Task ${updatedTask.title} updated.` });
+    } catch (error) {
+      console.error("Error updating task:", error);
+      toast({ variant: "destructive", title: "Error Updating Task", description: error instanceof Error ? error.message : "Could not update task." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   if (!projectData || !users) {
     return (
@@ -456,6 +482,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             onMoveToNextColumn={handleMoveToNextColumn}
             onMoveToPreviousColumn={handleMoveToPreviousColumn}
             isSubmitting={isSubmitting}
+            onUpdateTask={handleUpdateTask}
           />
         ))}
          {projectData.columns.length === 0 && (

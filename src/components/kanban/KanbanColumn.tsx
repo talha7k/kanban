@@ -22,6 +22,7 @@ interface KanbanColumnProps {
   onMoveToNextColumn: (task: Task) => void;
   onMoveToPreviousColumn: (task: Task) => void; 
   isSubmitting?: boolean;
+  onUpdateTask: (taskId: string, updatedFields: Partial<Task>) => void;
 }
 
 export function KanbanColumn({
@@ -40,6 +41,7 @@ export function KanbanColumn({
   onMoveToNextColumn,
   onMoveToPreviousColumn, 
   isSubmitting,
+  onUpdateTask,
 }: KanbanColumnProps) {
   const columnTasks = tasks
     .filter(task => task.columnId === column.id)
@@ -71,6 +73,7 @@ export function KanbanColumn({
             onMoveToNextColumn={onMoveToNextColumn}
             onMoveToPreviousColumn={onMoveToPreviousColumn} 
             isSubmitting={isSubmitting}
+            onUpdateTask={onUpdateTask}
           />
         ))}
         {columnTasks.length === 0 && (

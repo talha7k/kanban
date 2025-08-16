@@ -1,17 +1,19 @@
 
 "use client";
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
-import type { Project, UserProfile } from '@/lib/types';
+import type { Project, UserProfile, NewTaskData } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { getAllUserProfiles } from '@/lib/firebaseUser';
-import { getProjectById } from '@/lib/firebaseProject';
-import { updateProjectDetails } from '@/lib/firebaseProject'; 
+import { getProjectById, updateProjectDetails } from '@/lib/firebaseProject'; 
+import { addTaskToProject } from '@/lib/firebaseTask';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings } from 'lucide-react'; 
+import { Loader2, Settings, Sparkles } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { EditProjectDialog } from '@/components/project/EditProjectDialog'; 
+import { GenerateTasksDialog } from '@/components/project/GenerateTasksDialog';
+import { generateTasksAction } from '@/app/actions/project';
 import { useParams } from 'next/navigation';
 export default function ProjectPage() {
   const { currentUser } = useAuth();
@@ -24,7 +26,9 @@ export default function ProjectPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditProjectDialogOpen, setIsEditProjectDialogOpen] = useState(false);
   const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
+  const [isGenerateTasksDialogOpen, setIsGenerateTasksDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
 
   useEffect(() => {
 
@@ -97,6 +101,30 @@ export default function ProjectPage() {
     }
   };
 
+  const handleGenerateTasks = async (brief: string) => {
+    if (!project) return;
+    setIsGeneratingTasks(true);
+    try {
+      const result = await generateTasksAction(project.id, brief, currentUser!.uid);
+
+      if (result.success) {
+        if (result.updatedProject) {
+          setProject(result.updatedProject);
+        }
+        toast({ title: "AI Task Generation", description: `Successfully generated ${result.generatedTasksCount} tasks.` });
+        setIsGenerateTasksDialogOpen(false);
+      } else {
+        throw new Error(result.error);
+      }
+      setIsGenerateTasksDialogOpen(false);
+    } catch (error) {
+      console.error("Error generating tasks:", error);
+      toast({ variant: "destructive", title: "Error Generating Tasks", description: error instanceof Error ? error.message : "Could not generate tasks." });
+    } finally {
+      setIsGeneratingTasks(false);
+    }
+  };
+
 
   const isLoading = isLoadingProject || isLoadingUsers;
 
@@ -146,10 +174,16 @@ export default function ProjectPage() {
                             {project.name}
                         </h1>
                         {currentUser?.uid === project.ownerId && (
-                        <Button variant="ghost" size="icon" onClick={() => setIsEditProjectDialogOpen(true)} className="ml-3" disabled={isSubmittingProjectEdit}>
-                            <Settings className="h-5 w-5" />
-                            <span className="sr-only">Edit Project Details</span>
-                        </Button>
+                        <>
+                            <Button variant="ghost" size="icon" onClick={() => setIsEditProjectDialogOpen(true)} className="ml-3" disabled={isSubmittingProjectEdit}>
+                                <Settings className="h-5 w-5" />
+                                <span className="sr-only">Edit Project Details</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setIsGenerateTasksDialogOpen(true)} className="ml-1" disabled={isSubmittingProjectEdit}>
+                                <Sparkles className="h-5 w-5" />
+                                <span className="sr-only">Generate Tasks with AI</span>
+                            </Button>
+                        </>
                         )}
                     </div>
                     {project.description && (
@@ -173,6 +207,15 @@ export default function ProjectPage() {
           onEditProject={handleEditProjectSubmit}
           onDeleteProject={openDeleteProjectDialog}
           isSubmitting={isSubmittingProjectEdit}
+        />
+      )}
+
+      {project && (
+        <GenerateTasksDialog
+          isOpen={isGenerateTasksDialogOpen}
+          onOpenChange={setIsGenerateTasksDialogOpen}
+          onGenerate={handleGenerateTasks}
+          isGenerating={isGeneratingTasks}
         />
       )}
 
