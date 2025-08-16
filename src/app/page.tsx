@@ -152,7 +152,7 @@ export default function HomePage() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-12">
             Leverage intelligent automation to streamline your workflow and boost productivity.
           </p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
             <div className="bg-card p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
               <SparklesIcon className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-2xl font-semibold mb-3">AI-Powered Task Generation</h3>
