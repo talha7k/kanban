@@ -136,7 +136,7 @@ export function ManageProjectMembersDialog({
 
         <div className="flex-1 flex flex-col min-h-0">
           <h3 className="text-sm font-semibold mb-2 mt-3 text-muted-foreground">Current Members ({projectMembers.length})</h3>
-          <ScrollArea className="flex-grow border rounded-md mb-4">
+          <ScrollArea className="flex-grow border rounded-md mb-4 h-48 pr-1">
             <div className="p-2 space-y-1">
               {projectMembers.length > 0 ? (
                 projectMembers.map(member => (
