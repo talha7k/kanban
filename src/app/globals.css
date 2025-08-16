@@ -134,5 +134,5 @@ body {
 
 /* For react-beautiful-dnd focus outline */
 *:focus {
-  outline-color: hsl(var(--ring)) !important;
+  outline-color: hsl(var(--ring) / 0.3) !important;
 }
