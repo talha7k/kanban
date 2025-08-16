@@ -325,6 +325,10 @@ export default function DashboardPage() {
     setIsManageMembersDialogOpen(true);
   };
 
+  const openViewMembersDialog = (project: Project) => {
+    setSelectedProjectForMembers(project);
+  };
+
   const onMembersUpdated = async () => {
     if (currentUser?.uid) {
       await fetchDashboardData();
@@ -406,6 +410,7 @@ export default function DashboardPage() {
                       openEditProjectDialog={openEditProjectDialog}
                       openManageMembersDialog={openManageMembersDialog}
                       openDeleteProjectDialog={openDeleteProjectDialog}
+                      openViewMembersDialog={openViewMembersDialog}
                     />
                   ))}
                 </div>
@@ -422,6 +427,7 @@ export default function DashboardPage() {
           isLoadingUsers={isLoadingUsers}
           allUsers={allUsers}
           selectedTeam={selectedTeam}
+          selectedProject={selectedProjectForMembers}
         />
       </div>
 

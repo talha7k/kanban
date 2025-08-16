@@ -31,6 +31,7 @@ interface ProjectCardProps {
   openEditProjectDialog: (project: Project) => void;
   openManageMembersDialog: (project: Project) => void;
   openDeleteProjectDialog: (project: Project) => void;
+  openViewMembersDialog: (project: Project) => void;
 }
 
 export function ProjectCard({
@@ -40,6 +41,7 @@ export function ProjectCard({
   openEditProjectDialog,
   openManageMembersDialog,
   openDeleteProjectDialog,
+  openViewMembersDialog,
 }: ProjectCardProps) {
   return (
     <Card
@@ -94,6 +96,13 @@ export function ProjectCard({
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openViewMembersDialog(project)}
+          >
+            <Eye className="mr-1.5 h-3.5 w-3.5" /> View Members
+          </Button>
           {currentUserUid === project.ownerId && (
             <>
               <Button
