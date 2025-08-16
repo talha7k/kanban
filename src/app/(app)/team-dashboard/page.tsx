@@ -14,7 +14,8 @@ import {
 import type { NewProjectData, Project, UserProfile } from "@/lib/types";
 import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
 import { ManageProjectMembersDialog } from "@/components/dashboard/ManageProjectMembersDialog";
-import { PlusCircle,
+import {
+  PlusCircle,
   FolderKanban,
   Loader2,
   Briefcase,
@@ -22,26 +23,28 @@ import { PlusCircle,
   Eye,
   Crown,
   Pencil,
-  Trash2, Users } from "lucide-react";
+  Trash2,
+  Users,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { useAuth } from "@/hooks/useAuth";
 import { getProjectsForTeam } from "@/lib/firebaseProject";
 
-
- import { deleteProject as deleteProjectFromDb } from "@/lib/firebaseProject";
+import { deleteProject as deleteProjectFromDb } from "@/lib/firebaseProject";
 import { updateProjectDetails } from "@/lib/firebaseProject";
- import { createProject as createProjectInDb } from "@/lib/firebaseProject";
+import { createProject as createProjectInDb } from "@/lib/firebaseProject";
 import { getTeamMembers, getTeam } from "@/lib/firebaseTeam";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EditProjectDialog } from "@/components/project/EditProjectDialog";
 
-
-import { TeamId, Team } from '@/lib/types';
-import TeamSelection from '@/components/teams/TeamSelection';
+import { TeamId, Team } from "@/lib/types";
+import TeamSelection from "@/components/teams/TeamSelection";
+import { TeamUsersCard } from "@/components/teams/TeamUsersCard";
+import { DeleteProjectAlertDialog } from "@/components/dashboard/DeleteProjectAlertDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -79,25 +82,25 @@ export default function DashboardPage() {
   // Load selected team from localStorage on mount
   useEffect(() => {
     const loadTeamId = () => {
-      const storedTeamId = localStorage.getItem('selectedTeamId');
+      const storedTeamId = localStorage.getItem("selectedTeamId");
       if (storedTeamId) {
         setSelectedTeamId(storedTeamId as TeamId);
       }
       setIsLoadingTeamId(false);
     };
-    
+
     // Add a small delay to ensure localStorage is available
     setTimeout(loadTeamId, 50);
   }, []);
 
   const handleTeamSelected = useCallback((teamId: TeamId) => {
     setSelectedTeamId(teamId);
-    localStorage.setItem('selectedTeamId', teamId);
+    localStorage.setItem("selectedTeamId", teamId);
   }, []);
 
   const handleTeamCreated = useCallback((teamId: TeamId) => {
     setSelectedTeamId(teamId);
-    localStorage.setItem('selectedTeamId', teamId);
+    localStorage.setItem("selectedTeamId", teamId);
   }, []);
 
   const fetchDashboardData = async () => {
@@ -185,7 +188,11 @@ export default function DashboardPage() {
       return;
     }
     try {
-      const newProject = await createProjectInDb(projectData, currentUser.uid, selectedTeamId);
+      const newProject = await createProjectInDb(
+        projectData,
+        currentUser.uid,
+        selectedTeamId
+      );
 
       setProjects((prevProjects) =>
         [newProject, ...prevProjects].sort(
@@ -347,7 +354,9 @@ export default function DashboardPage() {
     <div className="container mx-auto py-8 px-4 sm:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <div className="flex items-center justify-between w-full">
-          <h1 className="text-3xl font-bold">{selectedTeam?.name || 'Dashboard'}</h1>
+          <h1 className="text-3xl font-bold">
+            {selectedTeam?.name || "Dashboard"}
+          </h1>
           <Link href="/teams">
             <Button variant="secondary">
               <Users className="mr-2 h-4 w-4" />
@@ -356,9 +365,7 @@ export default function DashboardPage() {
           </Link>
         </div>
         {currentUser && (
-          <Button
-            onClick={() => setIsCreateProjectDialogOpen(true)}
-           >
+          <Button onClick={() => setIsCreateProjectDialogOpen(true)}>
             <PlusCircle className="mr-2 h-5 w-5" /> Create New Project
           </Button>
         )}
@@ -411,100 +418,11 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center text-2xl">
-              <Users className="mr-3 h-7 w-7 text-accent" />
-              Users (
-              {isLoadingUsers ? (
-                <Loader2 className="h-5 w-5 animate-spin ml-2" />
-              ) : (
-                allUsers.length
-              )}
-              )
-            </CardTitle>
-            <CardDescription>Overview of team members.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingUsers ? (
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-2">
-                  <Skeleton className="h-9 w-9 rounded-full" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-                <div className="flex items-center space-x-3 p-2">
-                  <Skeleton className="h-9 w-9 rounded-full" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-                <div className="flex items-center space-x-3 p-2">
-                  <Skeleton className="h-9 w-9 rounded-full" />
-                  <Skeleton className="h-4 w-28" />
-                </div>
-              </div>
-            ) : allUsers.length > 0 ? (
-              <ScrollArea className="h-auto max-h-[350px] md:max-h-[500px] pr-4 overflow-y-auto">
-                <ul className="space-y-3">
-                  {allUsers.map((user) => (
-                    <li
-                      key={user.id}
-                      className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50"
-                    >
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage
-                          src={user.avatarUrl}
-                          alt={user.name}
-                          data-ai-hint="profile avatar"
-                        />
-                        <AvatarFallback>
-                          {user.name?.substring(0, 2).toUpperCase() ||
-                            user.email?.substring(0, 2).toUpperCase() ||
-                            "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <span
-                            className="text-sm font-medium text-foreground truncate"
-                            title={user.name}
-                          >
-                            {user.name}
-                          </span>
-                          <Badge
-                            variant={
-                              user.role === "admin" ? "default" : "secondary"
-                            }
-                            className="capitalize text-xs flex-shrink-0"
-                          >
-                            {user.role}
-                          </Badge>
-                        </div>
-                        <p
-                          className="text-xs text-muted-foreground truncate"
-                          title={user.email}
-                        >
-                          {user.email}
-                        </p>
-                        {user.title && (
-                          <p
-                            className="text-xs text-muted-foreground flex items-center mt-0.5 truncate"
-                            title={user.title}
-                          >
-                            <Briefcase className="h-3 w-3 mr-1.5 flex-shrink-0" />{" "}
-                            {user.title}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">
-                No users found.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <TeamUsersCard
+          isLoadingUsers={isLoadingUsers}
+          allUsers={allUsers}
+          selectedTeam={selectedTeam}
+        />
       </div>
 
       {currentUser && (
@@ -544,40 +462,12 @@ export default function DashboardPage() {
           isSubmitting={isSubmittingProjectEdit}
         />
       )}
-      <AlertDialog
-        open={!!projectToDelete}
-        onOpenChange={(open) => !open && setProjectToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Are you sure you want to delete this project?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              project "{projectToDelete?.name}" and all its tasks.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => setProjectToDelete(null)}
-              disabled={isDeletingProject}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteProject}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeletingProject}
-            >
-              {isDeletingProject ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Delete Project
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteProjectAlertDialog
+        projectToDelete={projectToDelete}
+        isDeletingProject={isDeletingProject}
+        setProjectToDelete={setProjectToDelete}
+        confirmDeleteProject={confirmDeleteProject}
+      />
     </div>
   );
 }
