@@ -44,7 +44,8 @@ export function ProjectCard({
   return (
     <Card
       key={project.id}
-      className="bg-primary/5 hover:shadow-lg transition-shadow"
+      className="bg-primary/5 hover:shadow-lg transition-shadow cursor-pointer hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100"
+      onClick={() => window.location.href = `/projects/${project.id}`}
     >
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
@@ -107,12 +108,7 @@ export function ProjectCard({
               </Button>
             </>
           )}{" "}
-          <Button asChild variant="default" size="sm">
-            <Link href={`/projects/${project.id}`}>
-              <Eye className="mr-1.5 h-3.5 w-3.5" />
-              View Board
-            </Link>
-          </Button>
+
         </div>
       </CardFooter>
     </Card>

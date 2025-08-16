@@ -41,7 +41,7 @@ export function ManageProjectMembersDialog({
 }: ManageProjectMembersDialogProps) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  const [selectedUserToAdd, setSelectedUserToAdd] = useState<UserProfile | null>(null);
+  const [selectedUsersToAdd, setSelectedUsersToAdd] = useState<UserProfile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [openCombobox, setOpenCombobox] = useState(false);
@@ -51,15 +51,17 @@ export function ManageProjectMembersDialog({
   const nonMemberUsers = allUsers.filter(user => !projectMemberIds.includes(user.id) && user.id !== project.ownerId);
 
   const handleAddMember = async () => {
-    if (!selectedUserToAdd) {
-      toast({ variant: "destructive", title: "No user selected", description: "Please select a user to add." });
+    if (selectedUsersToAdd.length === 0) {
+      toast({ variant: "destructive", title: "No users selected", description: "Please select at least one user to add." });
       return;
     }
     setIsSubmitting(true);
     try {
-      await addUserToProject(project.id, selectedUserToAdd.id); // Default role 'member' is set by service
-      toast({ title: "Member Added", description: `${selectedUserToAdd.name} has been added to the project as a member.` });
-      setSelectedUserToAdd(null);
+      for (const user of selectedUsersToAdd) {
+        await addUserToProject(project.id, user.id); // Default role 'member' is set by service
+      }
+      toast({ title: "Members Added", description: `${selectedUsersToAdd.length} user(s) have been added to the project.` });
+      setSelectedUsersToAdd([]);
       setSearchTerm("");
       await onMembersUpdate();
     } catch (error) {
@@ -190,66 +192,65 @@ export function ManageProjectMembersDialog({
                     className="w-full justify-between flex-1"
                     disabled={isSubmitting || nonMemberUsers.length === 0}
                     >
-                    {selectedUserToAdd
-                        ? selectedUserToAdd.name
+                    {selectedUsersToAdd.length > 0
+                        ? `${selectedUsersToAdd.length} user(s) selected`
                         : nonMemberUsers.length === 0 ? "No users to add" : "Select user..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                     <Command>
-                    <CommandInput
-                        placeholder="Search users..."
-                        value={searchTerm}
-                        onValueChange={setSearchTerm}
-                    />
-                    <CommandList>
+                        <CommandInput
+                            placeholder="Search users..."
+                            value={searchTerm}
+                            onValueChange={setSearchTerm}
+                        />
                         <CommandEmpty>No user found.</CommandEmpty>
-                        <CommandGroup>
-                        {nonMemberUsers
-                            .filter(user => user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email?.toLowerCase().includes(searchTerm.toLowerCase()))
-                            .map((user) => (
-                            <CommandItem
-                                key={user.id}
-                                value={user.name}
-                                onSelect={(currentValue) => {
-                                    const userFound = nonMemberUsers.find(u => u.name.toLowerCase() === currentValue.toLowerCase());
-                                    setSelectedUserToAdd(userFound || null);
-                                    setOpenCombobox(false);
-                                    setSearchTerm("");
-                                }}
-                            >
-                                <Check
-                                className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedUserToAdd?.id === user.id ? "opacity-100" : "opacity-0"
-                                )}
-                                />
-                                <div className="flex items-center space-x-2">
-                                     <Avatar className="h-6 w-6">
-                                        <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile small"/>
-                                        <AvatarFallback>{user.name?.substring(0,1).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <span>{user.name} ({user.email})</span>
-                                </div>
-                            </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    </CommandList>
+                        <CommandList>
+                            <CommandGroup>
+                                {nonMemberUsers
+                                    .filter(user => user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email?.toLowerCase().includes(searchTerm.toLowerCase()))
+                                    .map((user) => (
+                                        <CommandItem
+                                            key={user.id}
+                                            value={user.name}
+                                            onSelect={() => {
+                                                setSelectedUsersToAdd(prev =>
+                                                prev.some(u => u.id === user.id)
+                                                    ? prev.filter(u => u.id !== user.id)
+                                                    : [...prev, user]
+                                            );
+                                            // Keep combobox open for multi-selection
+                                        }}
+                                    >
+                                            <Check
+                                                className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    selectedUsersToAdd.some(u => u.id === user.id) ? "opacity-100" : "opacity-0"
+                                                )}
+                                            />
+                                            <Avatar className="h-6 w-6 mr-2">
+                                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                                <AvatarFallback>{user.name?.substring(0, 1).toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            {user.name}
+                                        </CommandItem>
+                                    ))
+                                }
+                            </CommandGroup>
+                        </CommandList>
                     </Command>
                 </PopoverContent>
             </Popover>
-            <Button onClick={handleAddMember} disabled={!selectedUserToAdd || isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-              Add
+            <Button onClick={handleAddMember} disabled={isSubmitting || selectedUsersToAdd.length === 0}>
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                <span className="ml-2">Add Selected ({selectedUsersToAdd.length})</span>
             </Button>
           </div>
         </div>
 
-        <DialogFooter className="mt-auto pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-            Close
-          </Button>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

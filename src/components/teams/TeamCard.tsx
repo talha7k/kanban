@@ -27,7 +27,10 @@ export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
   };
 
   return (
-    <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-0 shadow-md hover:scale-[1.02] bg-gradient-to-br from-white to-gray-50/50">
+    <Card
+      className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-0 shadow-md hover:scale-[1.02] bg-gradient-to-br from-white to-gray-50/50 hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100"
+      onClick={(e) => handleSelect(e, team.id)}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -119,14 +122,7 @@ export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
             <Settings className="w-4 h-4 mr-1" />
             Manage
           </Button>
-          <Button
-            size="sm"
-            className="w-full"
-            onClick={(e) => handleSelect(e, team.id)}
-          >
-            <span>Select</span>
-            <ArrowRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-0.5 transition-transform" />
-          </Button>
+
         </div>
       </CardContent>
     </Card>
