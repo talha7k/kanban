@@ -43,7 +43,7 @@ import { EditProjectDialog } from "@/components/project/EditProjectDialog";
 
 import { TeamId, Team } from "@/lib/types";
 import TeamSelection from "@/components/teams/TeamSelection";
-import { TeamUsersCard } from "@/components/teams/TeamUsersCard";
+import { LazyTeamUsersCard } from "@/components/teams/LazyTeamUsersCard";
 import { DeleteProjectAlertDialog } from "@/components/dashboard/DeleteProjectAlertDialog";
 import {
   AlertDialog,
@@ -71,7 +71,6 @@ export default function DashboardPage() {
   const [selectedProjectForMembers, setSelectedProjectForMembers] =
     useState<Project | null>(null);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isSubmittingProjectEdit, setIsSubmittingProjectEdit] = useState(false);
   const [isDeletingProject, setIsDeletingProject] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
@@ -103,40 +102,11 @@ export default function DashboardPage() {
     localStorage.setItem("selectedTeamId", teamId);
   }, []);
 
-  const fetchDashboardData = async () => {
-    if (!currentUser?.uid || !selectedTeamId) return; // Ensure team is selected
+  // Fetch projects first for immediate display
+  const fetchProjects = async () => {
+    if (!currentUser?.uid || !selectedTeamId) return;
     setIsLoadingProjects(true);
-    setIsLoadingUsers(true);
 
-    // Fetch team details
-    try {
-      const team = await getTeam(selectedTeamId);
-      setSelectedTeam(team);
-    } catch (error) {
-      console.error("Error fetching team details:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Could not load team details.",
-      });
-    }
-
-    // Fetch team members
-    try {
-      const fetchedUsers = await getTeamMembers(selectedTeamId);
-      setAllUsers(fetchedUsers);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Could not load users.",
-      });
-    } finally {
-      setIsLoadingUsers(false);
-    }
-
-    // Fetch projects
     try {
       const teamProjects = await getProjectsForTeam(selectedTeamId);
       setProjects(teamProjects);
@@ -164,9 +134,39 @@ export default function DashboardPage() {
     }
   };
 
+  // Fetch team details for the header (minimal data)
+  const fetchTeamDetails = async () => {
+    if (!currentUser?.uid || !selectedTeamId) return;
+
+    try {
+      const team = await getTeam(selectedTeamId);
+      setSelectedTeam(team);
+    } catch (error) {
+      console.error("Error fetching team details:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not load team details.",
+      });
+    }
+  };
+
+  // Legacy function for backward compatibility
+  const fetchDashboardData = async () => {
+    await Promise.all([fetchProjects(), fetchTeamDetails()]);
+  };
+
   useEffect(() => {
     if (currentUser?.uid && selectedTeamId) {
-      fetchDashboardData();
+      // Load projects immediately for better perceived performance
+      fetchProjects();
+      
+      // Load team details with a slight delay to prioritize projects
+      const timer = setTimeout(() => {
+        fetchTeamDetails();
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [currentUser?.uid, selectedTeamId]);
 
@@ -247,7 +247,7 @@ export default function DashboardPage() {
       });
       setIsEditProjectDialogOpen(false);
       setProjectToEdit(null);
-      await fetchDashboardData();
+      await fetchProjects();
     } catch (error) {
       console.error("Error updating project:", error);
       const errorMessage =
@@ -293,7 +293,7 @@ export default function DashboardPage() {
         description: `"${projectToDelete.name}" has been successfully deleted.`,
       });
       setProjectToDelete(null);
-      await fetchDashboardData();
+      await fetchProjects();
     } catch (error) {
       console.error("Error deleting project:", error);
       const errorMessage =
@@ -331,7 +331,8 @@ export default function DashboardPage() {
 
   const onMembersUpdated = async () => {
     if (currentUser?.uid) {
-      await fetchDashboardData();
+      // Refresh projects when members are updated
+      await fetchProjects();
     }
   };
 
@@ -425,12 +426,11 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <TeamUsersCard
-          isLoadingUsers={isLoadingUsers}
-          allUsers={allUsers}
-          selectedTeam={selectedTeam}
+        <LazyTeamUsersCard
+          selectedTeamId={selectedTeamId}
           selectedProject={selectedProjectForMembers}
           onClearSelectedProject={() => setSelectedProjectForMembers(null)}
+          onUsersLoaded={setAllUsers}
         />
       </div>
 
