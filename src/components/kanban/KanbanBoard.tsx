@@ -32,6 +32,18 @@ import { getProjectById } from '@/lib/firebaseProject';
    deleteCommentFromTask
  } from '@/lib/firebaseTask';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+} from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 
 
 interface KanbanBoardProps {
@@ -56,6 +68,21 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
   const { currentUser, userProfile } = useAuth();
   const { toast } = useToast();
+
+  // Configure sensors for touch and pointer events
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
+    })
+  );
 
   useEffect(() => {
     setProjectData(initialProject);
@@ -293,46 +320,39 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     }
   };
 
-  const onDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: TaskId) => {
+  const handleDragStart = (event: DragStartEvent) => {
     if (isSubmitting) return;
+    const taskId = event.active.id as TaskId;
     const task = projectData.tasks.find(t => t.id === taskId);
     if (!task) return;
 
     const canDrag = canManageTasks || task.assigneeUids?.includes(currentUser?.uid || '');
     if (!canDrag) {
-        e.preventDefault();
         toast({ variant: "destructive", title: "Permission Denied", description: "You can only move tasks you are assigned to, or if you are a manager/owner."});
         return;
     }
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("taskId", taskId);
     setDraggedTaskId(taskId);
   };
 
-  const onDragOver = (e: React.DragEvent<HTMLDivElement>, columnId: ColumnId) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const onDrop = async (e: React.DragEvent<HTMLDivElement>, targetColumnId: ColumnId) => {
-    e.preventDefault();
-    if (isSubmitting) {
-        setDraggedTaskId(null);
-        return;
-    }
-    const sourceTaskId = e.dataTransfer.getData("taskId");
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggedTaskId(null);
+    
+    if (!over || isSubmitting) return;
+    
+    const sourceTaskId = active.id as TaskId;
+    const targetColumnId = over.id as ColumnId;
+    
     if (!sourceTaskId || !projectData || !currentUser) return;
 
     const taskBeingMoved = projectData.tasks.find(t => t.id === sourceTaskId);
     if (!taskBeingMoved || taskBeingMoved.columnId === targetColumnId) {
-        setDraggedTaskId(null);
         return;
     }
 
     const canMoveThisTask = canManageTasks || taskBeingMoved.assigneeUids?.includes(currentUser.uid);
     if (!canMoveThisTask) {
         toast({ variant: "destructive", title: "Permission Denied", description: "You can only move tasks you are assigned to, or if you are a manager/owner."});
-        setDraggedTaskId(null);
         return;
     }
 
@@ -349,7 +369,6 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     });
     
     setProjectData(prev => ({ ...prev!, tasks: updatedTasksOptimistic }));
-    setDraggedTaskId(null);
     setIsSubmitting(true);
 
     try {
@@ -461,40 +480,44 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         )}
         Click on card to open task details. Drag cards or press right arrow to move tasks.
       </div>
-      <div className="flex-1 grid grid-cols-1 gap-4 lg:flex lg:gap-4 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">
-        {projectData.columns.sort((a,b) => a.order - b.order).map(column => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            tasks={filteredTasks} 
-            users={users}
-            projectColumns={projectData.columns}
-            canManageTasks={canManageTasks}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onAddTask={(colId) => { 
-                if (!canManageTasks) {
-                    toast({variant: "destructive", title: "Permission Denied", description: "You do not have permission to add tasks."});
-                    return;
-                }
-                setSelectedColumnIdForNewTask(colId); setIsAddTaskDialogOpen(true); 
-            }}
-            onEditTask={(taskToEdit) => { setTaskToEdit(taskToEdit); setIsEditTaskDialogOpen(true); }}
-            onDeleteTask={openDeleteConfirm}
-            onViewTaskDetails={(task) => { setTaskToView(task); setIsTaskDetailsDialogOpen(true); }}
-            onMoveToNextColumn={handleMoveToNextColumn}
-            onMoveToPreviousColumn={handleMoveToPreviousColumn}
-            isSubmitting={isSubmitting}
-            onUpdateTask={handleUpdateTask}
-          />
-        ))}
-         {projectData.columns.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-center p-4 col-span-1 md:col-span-2 lg:col-span-1">
-            <p className="text-muted-foreground">This project has no columns yet. <br/>The project owner can configure columns in project settings (feature coming soon).</p>
-          </div>
-        )}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex-1 grid grid-cols-1 gap-4 lg:flex lg:gap-4 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">
+          {projectData.columns.sort((a,b) => a.order - b.order).map(column => (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              tasks={filteredTasks} 
+              users={users}
+              projectColumns={projectData.columns}
+              canManageTasks={canManageTasks}
+              onAddTask={(colId) => { 
+                  if (!canManageTasks) {
+                      toast({variant: "destructive", title: "Permission Denied", description: "You do not have permission to add tasks."});
+                      return;
+                  }
+                  setSelectedColumnIdForNewTask(colId); setIsAddTaskDialogOpen(true); 
+              }}
+              onEditTask={(taskToEdit) => { setTaskToEdit(taskToEdit); setIsEditTaskDialogOpen(true); }}
+              onDeleteTask={openDeleteConfirm}
+              onViewTaskDetails={(task) => { setTaskToView(task); setIsTaskDetailsDialogOpen(true); }}
+              onMoveToNextColumn={handleMoveToNextColumn}
+              onMoveToPreviousColumn={handleMoveToPreviousColumn}
+              isSubmitting={isSubmitting}
+              onUpdateTask={handleUpdateTask}
+            />
+          ))}
+           {projectData.columns.length === 0 && (
+            <div className="flex-1 flex items-center justify-center text-center p-4 col-span-1 md:col-span-2 lg:col-span-1">
+              <p className="text-muted-foreground">This project has no columns yet. <br/>The project owner can configure columns in project settings (feature coming soon).</p>
+            </div>
+          )}
+        </div>
+      </DndContext>
 
       {canManageTasks && (
         <AddTaskDialog

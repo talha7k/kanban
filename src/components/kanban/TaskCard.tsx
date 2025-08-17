@@ -31,13 +31,13 @@ import {
 } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import React from "react";
+import { useDraggable } from "@dnd-kit/core";
 
 interface TaskCardProps {
   task: Task;
   users: UserProfile[];
   projectColumns: Column[];
   canManageTask: boolean;
-  onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
   onViewDetails: (task: Task) => void;
@@ -52,7 +52,6 @@ export function TaskCard({
   users,
   projectColumns,
   canManageTask,
-  onDragStart,
   onEdit,
   onDelete,
   onViewDetails,
@@ -61,6 +60,19 @@ export function TaskCard({
   isSubmitting,
   onUpdateTask,
 }: TaskCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: task.id,
+    data: {
+      task,
+      columnId: task.columnId,
+    },
+  });
   const { currentUser } = useAuth();
   const assignees =
     (task.assigneeUids
@@ -137,14 +149,20 @@ export function TaskCard({
   const canMoveTask =
     canManageTask || task.assigneeUids?.includes(currentUser?.uid || "");
 
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
   return (
     <Card
-      draggable={!isSubmitting && canMoveTask}
-      onDragStart={(e) =>
-        !isSubmitting && canMoveTask && onDragStart(e, task.id)
-      }
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
       className={`hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100 mb-3 shadow-md hover:shadow-lg transition-shadow duration-200 ${
-        isSubmitting
+        isDragging
+          ? "opacity-50 z-50"
+          : isSubmitting
           ? " opacity-70 cursor-not-allowed"
           : canMoveTask
           ? "cursor-grab active:cursor-grabbing bg-gradient-to-r from-purple-100 to-white"

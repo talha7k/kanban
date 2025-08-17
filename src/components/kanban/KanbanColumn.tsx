@@ -5,6 +5,7 @@ import type { Column, Task, UserProfile } from '@/lib/types';
 import { TaskCard } from './TaskCard';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useDroppable } from '@dnd-kit/core';
 
 interface KanbanColumnProps {
   column: Column;
@@ -12,9 +13,6 @@ interface KanbanColumnProps {
   users: UserProfile[];
   projectColumns: Column[]; 
   canManageTasks: boolean; 
-  onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
-  onDragOver: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
-  onDrop: (e: React.DragEvent<HTMLDivElement>, columnId: string) => void;
   onAddTask: (columnId: string) => void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
@@ -31,9 +29,6 @@ export function KanbanColumn({
   users,
   projectColumns,
   canManageTasks, 
-  onDragStart,
-  onDragOver,
-  onDrop,
   onAddTask,
   onEditTask,
   onDeleteTask,
@@ -43,15 +38,17 @@ export function KanbanColumn({
   isSubmitting,
   onUpdateTask,
 }: KanbanColumnProps) {
+  const { setNodeRef } = useDroppable({
+    id: column.id,
+  });
   const columnTasks = tasks
     .filter(task => task.columnId === column.id)
     .sort((a, b) => a.order - b.order);
 
   return (
     <div
+      ref={setNodeRef}
       className="w-full md:w-auto lg:w-80 xl:w-96 lg:flex-shrink-0 bg-muted/50 p-3 rounded-lg shadow-sm h-full flex flex-col"
-      onDragOver={(e) => onDragOver(e, column.id)}
-      onDrop={(e) => onDrop(e, column.id)}
       aria-labelledby={`column-title-${column.id}`}
     >
       <div className="flex justify-between items-center mb-4">
@@ -66,7 +63,7 @@ export function KanbanColumn({
             users={users}
             projectColumns={projectColumns}
             canManageTask={canManageTasks}
-            onDragStart={onDragStart}
+
             onEdit={onEditTask}
             onDelete={onDeleteTask}
             onViewDetails={onViewTaskDetails}
