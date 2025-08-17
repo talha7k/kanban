@@ -264,7 +264,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     const newCommentPayload: NewCommentData = {
       userId: userProfile.id,
       userName: userProfile.name || userProfile.email || 'Anonymous',
-      avatarUrl: userProfile.avatarUrl,
+      ...(userProfile.avatarUrl && { avatarUrl: userProfile.avatarUrl }),
       content: commentText,
     };
     try {
