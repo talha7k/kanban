@@ -36,7 +36,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
       <div className="flex h-14 items-center justify-between w-full">
         <div className="flex items-center">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
+          <Link href="/" className="mr-6 flex items-center space-x-2" prefetch={false}>
             <KanbanIcon className="h-6 w-6 text-primary" />
             <span className="font-bold sm:inline-block">
               DijiKanban
@@ -45,7 +45,7 @@ export function AppHeader() {
           <nav className="flex items-center space-x-4">
             {currentUser && (
               <Button variant="ghost" asChild>
-                <Link href="/teams">
+                <Link href="/teams" prefetch={false}>
                   <Users className="mr-2 h-4 w-4" />
                   Teams
                 </Link>
@@ -90,7 +90,7 @@ export function AppHeader() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile">
+                  <Link href="/profile" prefetch={false}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </Link>
@@ -104,12 +104,12 @@ export function AppHeader() {
           ) : (
             <>
               <Button variant="ghost" asChild size="sm">
-                <Link href="/login">
+                <Link href="/login" prefetch={false}>
                   <LogIn className="mr-2 h-4 w-4" /> Login
                 </Link>
               </Button>
               <Button asChild size="sm">
-                <Link href="/signup">Sign Up</Link>
+                <Link href="/signup" prefetch={false}>Sign Up</Link>
               </Button>
             </>
           )}
