@@ -4,8 +4,8 @@
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import React, { useEffect, useState, useTransition } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TeamId } from '@/lib/types';
 
@@ -13,12 +13,16 @@ import { TeamId } from '@/lib/types';
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { currentUser, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [selectedTeamId, setSelectedTeamId] = useState<TeamId | null>(null);
   const [teamLoading, setTeamLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!loading && !currentUser) {
-      router.push('/login');
+      startTransition(() => {
+        router.push('/login');
+      });
     } else if (currentUser) {
       const loadSelectedTeam = async () => {
         try {
@@ -40,11 +44,13 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loading && !teamLoading && currentUser && !selectedTeamId) {
       // Only redirect to teams if we're not already on the teams page
-      if (window.location.pathname !== '/teams') {
-        router.push('/teams');
+      if (pathname !== '/teams') {
+        startTransition(() => {
+          router.push('/teams');
+        });
       }
     }
-  }, [currentUser, loading, teamLoading, selectedTeamId, router]);
+  }, [currentUser, loading, teamLoading, selectedTeamId, router, pathname]);
 
   const handleTeamSelected = async (teamId: TeamId) => {
     setSelectedTeamId(teamId);
@@ -74,7 +80,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   }
 
   // Allow teams page to render even without selectedTeamId
-  const isTeamsPage = typeof window !== 'undefined' && window.location.pathname === '/teams';
+  const isTeamsPage = pathname === '/teams';
   if (!selectedTeamId && !isTeamsPage) {
     return null; // Navigation handled by useEffect
   }

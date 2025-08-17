@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,7 @@ export default function TeamsPage() {
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDescription, setNewTeamDescription] = useState("");
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const fetchTeams = useCallback(async () => {
     if (!currentUser?.uid) {
@@ -120,11 +121,10 @@ export default function TeamsPage() {
       // Store the selected team in local storage
       localStorage.setItem("selectedTeamId", teamId);
 
-      // Add a small delay to ensure localStorage is updated
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Navigate to team dashboard
-      router.push("/team-dashboard");
+      // Use startTransition to prevent navigation conflicts
+      startTransition(() => {
+        router.push("/team-dashboard");
+      });
 
       toast({
         title: "Team Selected",

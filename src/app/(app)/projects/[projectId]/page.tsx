@@ -273,13 +273,13 @@ export default function ProjectPage() {
         <h2 className="text-2xl font-semibold mb-2">Error</h2>
         <p>{error}</p>
         <Button
-          onClick={() => window.location.reload()}
+          onClick={() => router.refresh()}
           variant="outline"
           className="mt-4"
         >
           Try Reloading
         </Button>
-        <Link href="/team-dashboard" passHref>
+        <Link href="/team-dashboard" prefetch={false} passHref>
           <Button variant="link" className="mt-2">
             Go to Dashboard
           </Button>
@@ -292,7 +292,7 @@ export default function ProjectPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
         <p className="text-lg">Project not found or you do not have access.</p>
-        <Link href="/team-dashboard" passHref>
+        <Link href="/team-dashboard" prefetch={false} passHref>
           <Button variant="link" className="mt-2">
             Go to Dashboard
           </Button>
@@ -307,7 +307,7 @@ export default function ProjectPage() {
         <div className="container mx-auto">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
-              <Link href="/team-dashboard">
+              <Link href="/team-dashboard" prefetch={false}>
                 <Button variant="outline" size="icon">
                   <ArrowLeft className="h-4 w-4" />
                 </Button>

@@ -369,7 +369,7 @@ export default function DashboardPage() {
               <PlusCircle className="mr-2 h-5 w-5" /> Create New Project
             </Button>
           )}{" "}
-          <Link href="/teams">
+          <Link href="/teams" prefetch={false}>
             <Button variant="secondary">
               <Users className="mr-2 h-4 w-4" />
               Back to Teams
