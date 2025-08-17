@@ -6,6 +6,7 @@ import { TaskCard } from './TaskCard';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface KanbanColumnProps {
   column: Column;
@@ -56,23 +57,25 @@ export function KanbanColumn({
         <span className="text-sm text-muted-foreground bg-background px-2 py-1 rounded-full">{columnTasks.length}</span>
       </div>
       <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent min-h-[200px]">
-        {columnTasks.map(task => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            users={users}
-            projectColumns={projectColumns}
-            canManageTask={canManageTasks}
+        <SortableContext items={columnTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+          {columnTasks.map(task => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              users={users}
+              projectColumns={projectColumns}
+              canManageTask={canManageTasks}
 
-            onEdit={onEditTask}
-            onDelete={onDeleteTask}
-            onViewDetails={onViewTaskDetails}
-            onMoveToNextColumn={onMoveToNextColumn}
-            onMoveToPreviousColumn={onMoveToPreviousColumn} 
-            isSubmitting={isSubmitting}
-            onUpdateTask={onUpdateTask}
-          />
-        ))}
+              onEdit={onEditTask}
+              onDelete={onDeleteTask}
+              onViewDetails={onViewTaskDetails}
+              onMoveToNextColumn={onMoveToNextColumn}
+              onMoveToPreviousColumn={onMoveToPreviousColumn} 
+              isSubmitting={isSubmitting}
+              onUpdateTask={onUpdateTask}
+            />
+          ))}
+        </SortableContext>
         {columnTasks.length === 0 && (
            <div className="text-center text-sm text-muted-foreground py-4 border-2 border-dashed border-border rounded-md">
             Drag tasks here or click &quot;Add Task&quot;

@@ -342,6 +342,11 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     setActiveTask(task);
   };
 
+  const handleDragOver = (event: DragOverEvent) => {
+    // This provides visual feedback during drag operations
+    // The actual logic is handled in handleDragEnd
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setDraggedTaskId(null);
@@ -349,43 +354,99 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     
     if (!over || isSubmitting) return;
     
-    const sourceTaskId = active.id as TaskId;
-    const targetColumnId = over.id as ColumnId;
+    const activeId = active.id as TaskId;
+    const overId = over.id as string;
     
-    if (!sourceTaskId || !projectData || !currentUser) return;
+    if (!activeId || !projectData || !currentUser) return;
 
-    const taskBeingMoved = projectData.tasks.find(t => t.id === sourceTaskId);
-    if (!taskBeingMoved || taskBeingMoved.columnId === targetColumnId) {
-        return;
-    }
+    const activeTask = projectData.tasks.find(t => t.id === activeId);
+    if (!activeTask) return;
 
-    const canMoveThisTask = canManageTasks || taskBeingMoved.assigneeUids?.includes(currentUser.uid);
+    const canMoveThisTask = canManageTasks || activeTask.assigneeUids?.includes(currentUser.uid);
     if (!canMoveThisTask) {
         toast({ variant: "destructive", title: "Permission Denied", description: "You can only move tasks you are assigned to, or if you are a manager/owner."});
         return;
     }
 
+    // Check if we're dropping on a task (for reordering within column) or a column
+    const overTask = projectData.tasks.find(t => t.id === overId);
+    const overColumn = projectData.columns.find(c => c.id === overId);
+    
+    let targetColumnId: ColumnId;
+    let newOrder: number;
+    
+    if (overTask) {
+      // Dropping on another task - reorder within the same column or move to that task's column
+      targetColumnId = overTask.columnId;
+      const tasksInTargetColumn = projectData.tasks
+        .filter(t => t.columnId === targetColumnId && t.id !== activeId)
+        .sort((a, b) => a.order - b.order);
+      
+      const overTaskIndex = tasksInTargetColumn.findIndex(t => t.id === overId);
+      newOrder = overTaskIndex >= 0 ? overTaskIndex : tasksInTargetColumn.length;
+    } else if (overColumn) {
+      // Dropping on a column - place at the end
+      targetColumnId = overColumn.id;
+      newOrder = projectData.tasks.filter(t => t.columnId === targetColumnId && t.id !== activeId).length;
+    } else {
+      return;
+    }
+
+    // If same position, no change needed
+    if (activeTask.columnId === targetColumnId) {
+      const currentTasksInColumn = projectData.tasks
+        .filter(t => t.columnId === targetColumnId && t.id !== activeId)
+        .sort((a, b) => a.order - b.order);
+      
+      if (activeTask.order === newOrder || 
+          (newOrder === currentTasksInColumn.length && activeTask.order === currentTasksInColumn.length)) {
+        return;
+      }
+    }
+
     const originalTasks = [...projectData.tasks];
     
-    // Calculate new order: place at the end of the target column
-    const newOrder = projectData.tasks.filter(t => t.columnId === targetColumnId && t.id !== sourceTaskId).length;
-
-    const updatedTasksOptimistic = projectData.tasks.map(task => {
-        if (task.id === sourceTaskId) {
-            return { ...task, columnId: targetColumnId, order: newOrder, updatedAt: new Date().toISOString() };
+    // Update task orders optimistically
+    let updatedTasks = [...projectData.tasks];
+    
+    if (activeTask.columnId === targetColumnId) {
+      // Reordering within the same column
+      const tasksInColumn = updatedTasks
+        .filter(t => t.columnId === targetColumnId)
+        .sort((a, b) => a.order - b.order);
+      
+      const reorderedTasks = arrayMove(tasksInColumn, 
+        tasksInColumn.findIndex(t => t.id === activeId),
+        newOrder
+      );
+      
+      // Update orders
+      reorderedTasks.forEach((task, index) => {
+        const taskIndex = updatedTasks.findIndex(t => t.id === task.id);
+        if (taskIndex >= 0) {
+          updatedTasks[taskIndex] = { ...updatedTasks[taskIndex], order: index, updatedAt: new Date().toISOString() };
+        }
+      });
+    } else {
+      // Moving between columns
+      updatedTasks = updatedTasks.map(task => {
+        if (task.id === activeId) {
+          return { ...task, columnId: targetColumnId, order: newOrder, updatedAt: new Date().toISOString() };
+        }
+        // Adjust orders in target column
+        if (task.columnId === targetColumnId && task.order >= newOrder) {
+          return { ...task, order: task.order + 1, updatedAt: new Date().toISOString() };
         }
         return task;
-    });
+      });
+    }
     
-    setProjectData(prev => ({ ...prev!, tasks: updatedTasksOptimistic }));
+    setProjectData(prev => ({ ...prev!, tasks: updatedTasks }));
     setIsSubmitting(true);
 
     try {
-      await moveTaskInProject(projectData.id, sourceTaskId, targetColumnId, newOrder);
-      // Optionally, re-fetch the project to get the server-confirmed state, though optimistic update handles UI.
-      // const updatedProjectFromServer = await getProjectById(projectData.id);
-      // if (updatedProjectFromServer) setProjectData(updatedProjectFromServer);
-      toast({ title: "Task Moved", description: `"${taskBeingMoved.title}" moved.` });
+      await moveTaskInProject(projectData.id, activeId, targetColumnId, newOrder);
+      toast({ title: "Task Moved", description: `"${activeTask.title}" moved.` });
     } catch (error) {
       console.error("Error moving task:", error);
       toast({ variant: "destructive", title: "Error Moving Task", description: error instanceof Error ? error.message : "Could not move task." });
@@ -493,6 +554,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <div className="flex-1 grid grid-cols-1 gap-4 lg:flex lg:gap-4 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">

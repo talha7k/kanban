@@ -32,7 +32,8 @@ import {
 } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import React from "react";
-import { useDraggable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface TaskCardProps {
   task: Task;
@@ -66,8 +67,9 @@ export function TaskCard({
     listeners,
     setNodeRef,
     transform,
+    transition,
     isDragging,
-  } = useDraggable({
+  } = useSortable({
     id: task.id,
     data: {
       task,
@@ -149,11 +151,10 @@ export function TaskCard({
   const canMoveTask =
     canManageTask || task.assigneeUids?.includes(currentUser?.uid || "");
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
     zIndex: isDragging ? 1000 : 'auto',
-    touchAction: 'none',
-  } : {
     touchAction: 'none',
   };
 
