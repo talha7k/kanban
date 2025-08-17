@@ -152,7 +152,10 @@ export function TaskCard({
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     zIndex: isDragging ? 1000 : 'auto',
-  } : undefined;
+    touchAction: 'none',
+  } : {
+    touchAction: 'none',
+  };
 
   return (
     <Card
@@ -160,7 +163,7 @@ export function TaskCard({
       style={style}
       {...attributes}
       {...listeners}
-      className={`hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100 mb-3 shadow-md hover:shadow-lg transition-shadow duration-200 ${
+      className={`hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100 mb-3 shadow-md hover:shadow-lg transition-shadow duration-200 select-none touch-none ${
         isDragging
           ? "opacity-50 z-[1000]"
           : isSubmitting

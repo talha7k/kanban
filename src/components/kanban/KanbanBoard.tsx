@@ -6,6 +6,7 @@ import { KanbanColumn } from './KanbanColumn';
 import { AddTaskDialog } from './AddTaskDialog';
 import { EditTaskDialog } from './EditTaskDialog';
 import { TaskDetailsDialog } from './TaskDetailsDialog';
+import { TaskCard } from './TaskCard';
 import { useState, useEffect, useMemo } from 'react';
 import type { TaskFormData } from './TaskFormFields';
 import { Button } from '@/components/ui/button';
@@ -76,13 +77,13 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 3,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 100,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -527,10 +528,19 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         </div>
         <DragOverlay style={{ zIndex: 9999 }}>
           {activeTask ? (
-            <div className="bg-card border rounded-lg p-3 shadow-xl opacity-90 z-[9999]">
-              <h4 className="font-medium text-sm">{activeTask.title}</h4>
-              <p className="text-xs text-muted-foreground mt-1">{activeTask.description}</p>
-            </div>
+            <TaskCard
+              task={activeTask}
+              users={users}
+              projectColumns={projectData.columns}
+              canManageTask={canManageTasks}
+              onEdit={() => {}}
+              onDelete={() => {}}
+              onViewDetails={() => {}}
+              onMoveToNextColumn={() => {}}
+              onMoveToPreviousColumn={() => {}}
+              isSubmitting={false}
+              onUpdateTask={() => {}}
+            />
           ) : null}
         </DragOverlay>
       </DndContext>
