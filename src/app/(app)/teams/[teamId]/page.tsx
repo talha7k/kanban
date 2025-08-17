@@ -23,6 +23,7 @@ export default function TeamDetailPage() {
   const router = useRouter();
 
   const [team, setTeam] = useState<Team | null>(null);
+  const [teamCreator, setTeamCreator] = useState<UserProfile | null>(null);
   const [teamMembers, setTeamMembers] = useState<UserProfile[]>([]);
   const [teamProjects, setTeamProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,6 +50,16 @@ export default function TeamDetailPage() {
       setTeam(fetchedTeam);
       setTeamMembers(members);
       setTeamProjects(projects);
+      
+      // Fetch team creator profile
+      if (fetchedTeam?.createdBy) {
+        try {
+          const creatorProfile = await getUserProfile(fetchedTeam.createdBy);
+          setTeamCreator(creatorProfile);
+        } catch (error) {
+          console.error('Error fetching team creator profile:', error);
+        }
+      }
       
       console.log('Fetched team:', fetchedTeam);
       console.log('Fetched members:', members);
@@ -275,14 +286,14 @@ export default function TeamDetailPage() {
             <Edit2Icon />Team
           </Button>
           <Button variant="secondary" onClick={() => setIsAddMemberDialogOpen(true)} className="mr-2">
-            <UserPlus className="mr-2 h-4 w-4" /> Add 
+            <UserPlus className="mr-2 h-4 w-4" />Add 
           </Button>
           {team.ownerId === currentUser?.uid && (
             <Button 
               variant="destructive" 
               onClick={() => setIsDeleteTeamDialogOpen(true)}
             >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Team
+              <Trash2 className="mr-2 h-4 w-4" />Team
             </Button>
           )}
         </div>
@@ -294,7 +305,7 @@ export default function TeamDetailPage() {
         </CardHeader>
         <CardContent>
           <p><strong>Description:</strong> {team.description || 'N/A'}</p>
-          <p><strong>Created By:</strong> {team.createdBy}</p>
+          <p><strong>Created By:</strong> {teamCreator?.name || team.createdBy}</p>
           <p><strong>Created At:</strong> {new Date(team.createdAt).toLocaleDateString()}</p>
         </CardContent>
       </Card>
