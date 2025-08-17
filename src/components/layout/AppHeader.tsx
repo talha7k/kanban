@@ -33,7 +33,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
       <div className="flex h-14 items-center justify-between w-full">
         <div className="flex items-center">
           <Link href="/" className="mr-6 flex items-center space-x-2">
