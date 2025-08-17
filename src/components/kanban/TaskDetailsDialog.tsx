@@ -72,7 +72,13 @@ export function TaskDetailsDialog({
         toast({ variant: "destructive", title: "Empty Comment", description: "Cannot add an empty comment."});
         return;
     }
-    await onAddComment(task.id, newComment);
+    try {
+      await onAddComment(task.id, newComment);
+      setNewComment(''); // Clear the input after successful submission
+      toast({ title: "Comment Added", description: "Your comment has been added successfully." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to add comment. Please try again." });
+    }
   };
 
   const getPriorityBadgeVariant = (priority: Task['priority']) => {
@@ -105,7 +111,7 @@ export function TaskDetailsDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogDescription className="sr-only">
             Task details dialog for {task.title}
           </DialogDescription>
@@ -136,8 +142,9 @@ export function TaskDetailsDialog({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-4 py-4">
+        <div className="flex-1 flex flex-col min-h-0">
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-4 py-4">
             {task.description && (
               <div>
                 <h3 className="font-semibold text-sm mb-1 text-muted-foreground">Description</h3>
@@ -209,17 +216,20 @@ export function TaskDetailsDialog({
 
             <Separator className="my-4" />
 
-            <div>
-              <h3 className="font-semibold text-lg mb-2 text-foreground flex items-center"><MessageSquare className="h-5 w-5 mr-2" />Comments ({comments.length})</h3>
-              <div className="space-y-3 mt-4">
-                {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
-                {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
-              </div>
+            <div className="flex-1 flex flex-col min-h-0">
+              <h3 className="font-semibold text-lg mb-2 text-foreground flex items-center flex-shrink-0"><MessageSquare className="h-5 w-5 mr-2" />Comments ({comments.length})</h3>
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="space-y-3 pr-4">
+                  {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
+                  {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
+                </div>
+              </ScrollArea>
             </div>
-          </div>
-        </ScrollArea>
+            </div>
+          </ScrollArea>
+        </div>
 
-        <DialogFooter className="flex-col sm:flex-row pt-4 border-t mt-auto">
+        <DialogFooter className="flex-col sm:flex-row gap-3 sm:gap-2 pt-4 border-t flex-shrink-0">
             <Input
                 placeholder="Add a comment..."
                 value={newComment}
@@ -227,7 +237,7 @@ export function TaskDetailsDialog({
                 className="flex-1"
                 disabled={isSubmittingComment}
             />
-            <Button onClick={handleAddCommentSubmit} disabled={newComment.trim() === '' || isSubmittingComment}>
+            <Button onClick={handleAddCommentSubmit} disabled={newComment.trim() === '' || isSubmittingComment} className="w-full sm:w-auto">
                 {isSubmittingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Add Comment
             </Button>
