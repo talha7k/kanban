@@ -19,7 +19,7 @@ import {
 } from "@/app/actions/project";
 import { useParams, useRouter } from "next/navigation";
 export default function ProjectPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { projectId } = useParams();
   const router = useRouter();
@@ -245,6 +245,16 @@ export default function ProjectPage() {
       setIsAddingTasks(false);
     }
   };
+
+  // Authentication and loading guard
+  if (authLoading || !currentUser) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
+        <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
+        <p className="text-lg">Loading...</p>
+      </div>
+    );
+  }
 
   const isLoading = isLoadingProject || isLoadingUsers;
 

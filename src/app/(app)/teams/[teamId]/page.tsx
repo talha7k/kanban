@@ -18,7 +18,7 @@ import { useParams } from 'next/navigation';
 
 export default function TeamDetailPage() {
   const { teamId } = useParams();
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -98,8 +98,8 @@ export default function TeamDetailPage() {
     }
   }, [fetchTeamDetails, currentUser?.uid]);
 
-  // Authentication guard
-  if (!currentUser) {
+  // Authentication and loading guard
+  if (authLoading || !currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />

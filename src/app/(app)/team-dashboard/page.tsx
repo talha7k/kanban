@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function DashboardPage() {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -336,8 +336,8 @@ export default function DashboardPage() {
     }
   };
 
-  // Show loading while checking for selectedTeamId
-  if (isLoadingTeamId) {
+  // Show loading while checking for auth or selectedTeamId
+  if (authLoading || isLoadingTeamId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
