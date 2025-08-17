@@ -22,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { AITaskDetailGenerator } from './AITaskDetailGenerator';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '../ui/input';
 
 interface TaskDetailsDialogProps {
   isOpen: boolean;
@@ -210,21 +211,22 @@ export function TaskDetailsDialog({
 
             <div>
               <h3 className="font-semibold text-lg mb-2 text-foreground flex items-center"><MessageSquare className="h-5 w-5 mr-2" />Comments ({comments.length})</h3>
-              <div className="space-y-1">
-                {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
-                {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
-              </div>
+              <ScrollArea className="h-[200px] pr-4">
+            <div className="space-y-1">
+              {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
+              {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
+            </div>
+          </ScrollArea>
             </div>
           </div>
         </ScrollArea>
 
         <DialogFooter className="flex-col sm:flex-row pt-4 border-t mt-auto">
-            <Textarea
+            <Input
                 placeholder="Add a comment..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 className="flex-1 min-h-[60px]"
-                rows={2}
                 disabled={isSubmittingComment}
             />
             <Button onClick={handleAddCommentSubmit} disabled={newComment.trim() === '' || isSubmittingComment}>
