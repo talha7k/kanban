@@ -525,9 +525,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             </div>
           )}
         </div>
-        <DragOverlay>
+        <DragOverlay style={{ zIndex: 9999 }}>
           {activeTask ? (
-            <div className="bg-card border rounded-lg p-3 shadow-lg opacity-90">
+            <div className="bg-card border rounded-lg p-3 shadow-xl opacity-90 z-[9999]">
               <h4 className="font-medium text-sm">{activeTask.title}</h4>
               <p className="text-xs text-muted-foreground mt-1">{activeTask.description}</p>
             </div>

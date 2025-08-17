@@ -19,6 +19,7 @@ import {
   Clock,
   ArrowRightCircle,
   ArrowLeftCircle,
+  Eye,
 } from "lucide-react";
 import {
   format,
@@ -150,6 +151,7 @@ export function TaskCard({
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: isDragging ? 1000 : 'auto',
   } : undefined;
 
   return (
@@ -160,14 +162,13 @@ export function TaskCard({
       {...listeners}
       className={`hover:bg-gradient-to-r hover:from-pink-100 hover:to-purple-100 mb-3 shadow-md hover:shadow-lg transition-shadow duration-200 ${
         isDragging
-          ? "opacity-50 z-50"
+          ? "opacity-50 z-[1000]"
           : isSubmitting
           ? " opacity-70 cursor-not-allowed"
           : canMoveTask
           ? "cursor-grab active:cursor-grabbing bg-gradient-to-r from-purple-100 to-white"
           : "cursor-default"
       }`}
-      onClick={() => !isSubmitting && onViewDetails(task)}
       aria-label={`Task: &quot;${task.title}&quot;, Priority: &quot;${task.priority}&quot;`}
     >
       <CardHeader className="p-4">
@@ -281,6 +282,24 @@ export function TaskCard({
               )}
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails(task);
+            }}
+            aria-label="View task details"
+            title="View task details"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </Button>
           {canManageTask && (
             <>
               <Button
