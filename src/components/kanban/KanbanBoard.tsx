@@ -62,13 +62,6 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
 
   const canManageTasks = useMemo(() => isOwner || currentUserProjectRole === 'manager', [isOwner, currentUserProjectRole]);
 
-  // Initialize custom hooks
-  const { dragHandlers, sensors, activeId, activeTask } = useDragAndDrop(
-    projectData.tasks,
-    (tasks) => setProjectData(prev => ({ ...prev!, tasks })),
-    currentUser?.uid || ''
-  );
-
   const {
     taskToEdit,
     setTaskToEdit,
@@ -88,6 +81,14 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     (tasks) => setProjectData(prev => ({ ...prev!, tasks })),
     projectData.id,
     currentUser?.uid || ''
+  );
+
+  // Initialize custom hooks
+  const { dragHandlers, sensors, activeId, activeTask } = useDragAndDrop(
+    projectData.tasks,
+    (updatedTasks) => setProjectData(prev => ({ ...prev, tasks: updatedTasks })),
+    currentUser?.uid || '',
+    handleUpdateTask
   );
 
   const assignableUsers = useMemo(() => {

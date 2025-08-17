@@ -15,7 +15,8 @@ import type { Task, TaskId } from '@/lib/types';
 export function useDragAndDrop(
   tasks: Task[],
   setTasks: (tasks: Task[]) => void,
-  currentUserId: string
+  currentUserId: string,
+  onUpdateTask?: (taskId: string, updatedFields: Partial<Task>) => Promise<void>
 ) {
   const [draggedTaskId, setDraggedTaskId] = useState<TaskId | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -105,6 +106,11 @@ export function useDragAndDrop(
           return task;
         });
         setTasks(updatedTasks);
+        
+        // Persist the change to database
+        if (onUpdateTask) {
+          onUpdateTask(activeId, { columnId: newColumnId }).catch(console.error);
+        }
       }
     } else {
       // Dropped on another task - reorder within column or move to different column
@@ -137,6 +143,16 @@ export function useDragAndDrop(
           });
           
           setTasks(updatedTasks);
+          
+          // Persist the order changes to database
+          if (onUpdateTask) {
+            updatedColumnTasks.forEach(task => {
+              const originalTask = tasks.find(t => t.id === task.id);
+              if (originalTask && originalTask.order !== task.order) {
+                onUpdateTask(task.id, { order: task.order }).catch(console.error);
+              }
+            });
+          }
         }
       } else {
         // Moving to a different column
@@ -165,6 +181,22 @@ export function useDragAndDrop(
         });
         
         setTasks(updatedTasks);
+        
+        // Persist the changes to database
+        if (onUpdateTask) {
+          // Update the moved task
+          onUpdateTask(activeId, { columnId: overTask.columnId, order: overIndex }).catch(console.error);
+          
+          // Update order for affected tasks in target column
+          updatedTasks.forEach(task => {
+            if (task.columnId === overTask.columnId && task.id !== activeId) {
+              const originalTask = tasks.find(t => t.id === task.id);
+              if (originalTask && originalTask.order !== task.order) {
+                onUpdateTask(task.id, { order: task.order }).catch(console.error);
+              }
+            }
+          });
+        }
       }
     }
   };

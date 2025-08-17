@@ -49,6 +49,7 @@ export function TaskDetailsDialog({
 }: TaskDetailsDialogProps) {
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<CommentType[]>([]);
+  const [isSubmittingLocalComment, setIsSubmittingLocalComment] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -60,7 +61,14 @@ export function TaskDetailsDialog({
     if (isOpen) {
         setNewComment('');
     }
-  }, [task, isOpen]);
+  }, [task, task?.comments, isOpen]);
+
+  // Update comments when task changes (for real-time updates)
+  useEffect(() => {
+    if (task && task.comments) {
+      setComments([...task.comments].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    }
+  }, [task?.comments]);
 
   if (!isOpen || !task) return null;
 
@@ -72,12 +80,19 @@ export function TaskDetailsDialog({
         toast({ variant: "destructive", title: "Empty Comment", description: "Cannot add an empty comment."});
         return;
     }
+    setIsSubmittingLocalComment(true);
     try {
       await onAddComment(task.id, newComment);
+      // Refresh comments from the updated task
+      if (task && task.comments) {
+        setComments(task.comments);
+      }
       setNewComment(''); // Clear the input after successful submission
       toast({ title: "Comment Added", description: "Your comment has been added successfully." });
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to add comment. Please try again." });
+    } finally {
+      setIsSubmittingLocalComment(false);
     }
   };
 
@@ -231,10 +246,10 @@ export function TaskDetailsDialog({
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 className="flex-1"
-                disabled={isSubmittingComment}
+                disabled={isSubmittingLocalComment}
             />
-            <Button onClick={handleAddCommentSubmit} disabled={newComment.trim() === '' || isSubmittingComment} className="w-full sm:w-auto">
-                {isSubmittingComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <Button onClick={handleAddCommentSubmit} disabled={newComment.trim() === '' || isSubmittingLocalComment} className="w-full sm:w-auto">
+                {isSubmittingLocalComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Add Comment
             </Button>
         </DialogFooter>
