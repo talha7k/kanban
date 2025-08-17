@@ -48,8 +48,32 @@ export function useDragAndDrop(
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    // This provides visual feedback during drag operations
-    // The actual logic is handled in handleDragEnd
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    const activeId = active.id as TaskId;
+    const overId = over.id as string;
+    
+    // Find the active task
+    const activeTask = tasks.find(task => task.id === activeId);
+    if (!activeTask) return;
+
+    // Check if we're hovering over a different column
+    const isOverColumn = tasks.every(task => task.id !== overId);
+    const overTask = tasks.find(task => task.id === overId);
+    
+    if (isOverColumn) {
+      // Hovering over a column - show preview in that column
+      const targetColumnId = overId;
+      if (activeTask.columnId !== targetColumnId) {
+        // Provide visual feedback for cross-column movement
+        // This will be handled by the DragOverlay in the parent component
+      }
+    } else if (overTask && activeTask.columnId !== overTask.columnId) {
+      // Hovering over a task in a different column
+      // Provide visual feedback for cross-column movement
+    }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -64,9 +88,85 @@ export function useDragAndDrop(
     
     if (!activeId || activeId === overId) return;
 
-    // Simple implementation - just log for now
-    // The actual drag and drop logic should be implemented in the parent component
-    console.log('Drag ended:', { activeId, overId });
+    const activeTask = tasks.find(task => task.id === activeId);
+    if (!activeTask) return;
+
+    // Check if we're dropping on a column or another task
+    const isDroppedOnColumn = tasks.every(task => task.id !== overId);
+    
+    if (isDroppedOnColumn) {
+      // Dropped on a column - move to that column
+      const newColumnId = overId;
+      if (activeTask.columnId !== newColumnId) {
+        const updatedTasks = tasks.map(task => {
+          if (task.id === activeId) {
+            return { ...task, columnId: newColumnId };
+          }
+          return task;
+        });
+        setTasks(updatedTasks);
+      }
+    } else {
+      // Dropped on another task - reorder within column or move to different column
+      const overTask = tasks.find(task => task.id === overId);
+      if (!overTask) return;
+
+      if (activeTask.columnId === overTask.columnId) {
+        // Reordering within the same column
+        const columnTasks = tasks
+          .filter(task => task.columnId === activeTask.columnId)
+          .sort((a, b) => a.order - b.order);
+        
+        const activeIndex = columnTasks.findIndex(task => task.id === activeId);
+        const overIndex = columnTasks.findIndex(task => task.id === overId);
+        
+        if (activeIndex !== overIndex) {
+          const reorderedTasks = [...columnTasks];
+          const [movedTask] = reorderedTasks.splice(activeIndex, 1);
+          reorderedTasks.splice(overIndex, 0, movedTask);
+          
+          // Update order values
+          const updatedColumnTasks = reorderedTasks.map((task, index) => ({
+            ...task,
+            order: index
+          }));
+          
+          const updatedTasks = tasks.map(task => {
+            const updatedTask = updatedColumnTasks.find(ct => ct.id === task.id);
+            return updatedTask || task;
+          });
+          
+          setTasks(updatedTasks);
+        }
+      } else {
+        // Moving to a different column
+        const targetColumnTasks = tasks
+          .filter(task => task.columnId === overTask.columnId)
+          .sort((a, b) => a.order - b.order);
+        
+        const overIndex = targetColumnTasks.findIndex(task => task.id === overId);
+        
+        const updatedTasks = tasks.map(task => {
+          if (task.id === activeId) {
+            return {
+              ...task,
+              columnId: overTask.columnId,
+              order: overIndex
+            };
+          }
+          // Update order for tasks in the target column that come after the drop position
+          if (task.columnId === overTask.columnId && task.order >= overIndex) {
+            return {
+              ...task,
+              order: task.order + 1
+            };
+          }
+          return task;
+        });
+        
+        setTasks(updatedTasks);
+      }
+    }
   };
 
   return {

@@ -179,42 +179,47 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">{projectData.name}</h1>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={taskViewFilter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTaskViewFilter('all')}
-              className="flex items-center gap-2"
-            >
-              <ListFilter className="h-4 w-4" />
-              All Tasks
-            </Button>
-            <Button
-              variant={taskViewFilter === 'mine' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTaskViewFilter('mine')}
-              className="flex items-center gap-2"
-            >
-              <UserCheck className="h-4 w-4" />
-              My Tasks
-            </Button>
+      <div className="p-4 border-b space-y-4 md:space-y-0">
+        {/* Mobile: Stack vertically, Desktop: Side by side */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <h1 className="text-xl md:text-2xl font-bold">{projectData.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant={taskViewFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTaskViewFilter('all')}
+                className="flex items-center gap-2"
+              >
+                <ListFilter className="h-4 w-4" />
+                <span className="hidden sm:inline">All Tasks</span>
+                <span className="sm:hidden">All</span>
+              </Button>
+              <Button
+                variant={taskViewFilter === 'mine' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTaskViewFilter('mine')}
+                className="flex items-center gap-2"
+              >
+                <UserCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">My Tasks</span>
+                <span className="sm:hidden">Mine</span>
+              </Button>
+            </div>
           </div>
+          {canManageTasks && (
+            <Button
+              onClick={() => {
+                setSelectedColumnIdForNewTask(projectData.columns[0]?.id || null);
+                setIsAddTaskDialogOpen(true);
+              }}
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4" />
+              Add Task
+            </Button>
+          )}
         </div>
-        {canManageTasks && (
-          <Button
-            onClick={() => {
-              setSelectedColumnIdForNewTask(projectData.columns[0]?.id || null);
-              setIsAddTaskDialogOpen(true);
-            }}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add Task
-          </Button>
-        )}
       </div>
 
       {/* Kanban Board */}
@@ -226,8 +231,9 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
           onDragOver={dragHandlers.handleDragOver}
           onDragEnd={dragHandlers.handleDragEnd}
         >
-          <div className="h-full overflow-x-auto">
-            <div className="flex gap-6 p-6 h-full min-w-max">
+          {/* Mobile: Stack columns vertically, Desktop: Horizontal scroll */}
+          <div className="h-full">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-6 h-full md:overflow-x-auto">
               {projectData.columns.map((column) => {
                 const columnTasks = filteredTasks.filter(task => task.columnId === column.id);
                 return (

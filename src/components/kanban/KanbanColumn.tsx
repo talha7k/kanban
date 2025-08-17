@@ -49,7 +49,7 @@ export function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`w-full md:w-auto lg:w-80 xl:w-96 lg:flex-shrink-0 bg-muted/50 p-3 rounded-lg shadow-sm h-full flex flex-col transition-colors ${
+      className={`w-full md:flex-1 md:min-w-0 md:max-w-sm lg:max-w-md xl:max-w-lg bg-muted/50 p-3 rounded-lg shadow-sm h-full flex flex-col transition-colors ${
         isOver ? 'ring-2 ring-primary bg-primary/5' : ''
       }`}
       aria-labelledby={`column-title-${column.id}`}
