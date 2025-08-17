@@ -2,7 +2,7 @@
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import type { Project, UserProfile, NewTaskData, Task } from "@/lib/types";
 import { useEffect, useState } from "react";
-import { getProjectRelevantUsers } from "@/lib/firebaseUser";
+import { getProjectRelevantUsers, getUserProfile } from "@/lib/firebaseUser";
 import { getProjectById, updateProjectDetails, deleteProject } from "@/lib/firebaseProject";
 import { addTaskToProject } from "@/lib/firebaseTask";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,7 @@ export default function ProjectPage() {
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [projectCreator, setProjectCreator] = useState<UserProfile | null>(null);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +50,11 @@ export default function ProjectPage() {
             getProjectById(projectId as string),
             getProjectRelevantUsers(projectId as string),
           ]);
+
+          if (fetchedProject?.ownerId) {
+            const creatorProfile = await getUserProfile(fetchedProject.ownerId);
+            setProjectCreator(creatorProfile);
+          }
 
           if (fetchedProject) {
             const isMember =
@@ -303,6 +309,11 @@ export default function ProjectPage() {
                 {project.description && (
                   <p className="text-sm text-muted-foreground mt-1">
                     {project.description}
+                  </p>
+                )}
+                {projectCreator && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Created by: {projectCreator.name}
                   </p>
                 )}
               </div>
