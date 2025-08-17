@@ -226,7 +226,7 @@ export function TaskDetailsDialog({
                 placeholder="Add a comment..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 min-h-[60px]"
+                className="flex-1"
                 disabled={isSubmittingComment}
             />
             <Button onClick={handleAddCommentSubmit} disabled={newComment.trim() === '' || isSubmittingComment}>
