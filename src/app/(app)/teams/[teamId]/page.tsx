@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, UserPlus, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, UserPlus, Trash2, AlertTriangle, Edit2Icon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useParams } from 'next/navigation';
 
@@ -272,10 +272,10 @@ export default function TeamDetailPage() {
         </div>
         <div className="flex">
           <Button variant="secondary" onClick={() => setIsEditTeamDialogOpen(true)} className="mr-2">
-            Edit Team
+            <Edit2Icon />Team
           </Button>
           <Button variant="secondary" onClick={() => setIsAddMemberDialogOpen(true)} className="mr-2">
-            <UserPlus className="mr-2 h-4 w-4" /> Add Member
+            <UserPlus className="mr-2 h-4 w-4" /> Add 
           </Button>
           {team.ownerId === currentUser?.uid && (
             <Button 
@@ -336,7 +336,7 @@ export default function TeamDetailPage() {
       <Dialog open={isEditTeamDialogOpen} onOpenChange={setIsEditTeamDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Team Details</DialogTitle>
+            <DialogTitle>Team Details</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
