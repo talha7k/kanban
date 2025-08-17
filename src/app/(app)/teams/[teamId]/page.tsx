@@ -37,6 +37,8 @@ export default function TeamDetailPage() {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [isDeleteTeamDialogOpen, setIsDeleteTeamDialogOpen] = useState(false);
   const [isDeletingTeam, setIsDeletingTeam] = useState(false);
+  const [isRemoveMemberConfirmDialogOpen, setIsRemoveMemberConfirmDialogOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<UserProfile | null>(null);
 
   const fetchTeamDetails = useCallback(async () => {
     if (!teamId || !currentUser?.uid) return;
@@ -134,9 +136,20 @@ export default function TeamDetailPage() {
     }
   };
 
-  const handleRemoveMember = async (memberIdToRemove: UserId) => {
-    if (!team || !currentUser) return;
-    
+  const handleRemoveMemberClick = (member: UserProfile) => {
+    setMemberToRemove(member);
+    setIsRemoveMemberConfirmDialogOpen(true);
+  };
+
+  const handleRemoveMemberConfirm = async () => {
+    if (!team || !currentUser || !memberToRemove) {
+      setIsRemoveMemberConfirmDialogOpen(false);
+      setMemberToRemove(null);
+      return;
+    }
+
+    const memberIdToRemove = memberToRemove.id;
+
     // Prevent users from removing themselves
     if (memberIdToRemove === currentUser.uid) {
       toast({
@@ -144,19 +157,18 @@ export default function TeamDetailPage() {
         title: 'Cannot Remove Yourself',
         description: 'You cannot remove yourself from the team. Use the delete team option if you want to delete the entire team.',
       });
+      setIsRemoveMemberConfirmDialogOpen(false);
+      setMemberToRemove(null);
       return;
     }
-    
-    // Store the member being removed for potential revert
-    const memberToRemove = teamMembers.find(member => member.id === memberIdToRemove);
-    
-    // Optimistically remove the member from the UI
-    setTeam((prev: Team | null) =>
-      prev ? { ...prev, memberIds: prev.memberIds.filter((id) => id !== memberIdToRemove) } : null
-    );
-    setTeamMembers((prev) => prev.filter((member) => member.id !== memberIdToRemove));
-    
+
     try {
+      // Optimistically remove the member from the UI
+      setTeam((prev: Team | null) =>
+        prev ? { ...prev, memberIds: prev.memberIds.filter((id) => id !== memberIdToRemove) } : null
+      );
+      setTeamMembers((prev) => prev.filter((member) => member.id !== memberIdToRemove));
+
       await removeMemberFromTeam(team.id, memberIdToRemove);
       toast({
         title: 'Member Removed!',
@@ -176,6 +188,9 @@ export default function TeamDetailPage() {
       if (memberToRemove) {
         setTeamMembers((prev) => [...prev, memberToRemove]);
       }
+    } finally {
+      setIsRemoveMemberConfirmDialogOpen(false);
+      setMemberToRemove(null);
     }
   };
 
@@ -334,9 +349,8 @@ export default function TeamDetailPage() {
                   </div>
                   {member.id !== currentUser?.uid && (
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveMember(member.id)}
+                      variant="destructive"
+                      onClick={() => handleRemoveMemberClick(member)}
                     >
                       Remove
                     </Button>
@@ -470,7 +484,27 @@ export default function TeamDetailPage() {
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Delete Team
+              Team
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRemoveMemberConfirmDialogOpen} onOpenChange={setIsRemoveMemberConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Removal</DialogTitle>
+          </DialogHeader>
+          <p>
+            Are you sure you want to remove <strong>{memberToRemove?.name}</strong> from the team?
+            This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsRemoveMemberConfirmDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRemoveMemberConfirm}>
+              Remove
             </Button>
           </DialogFooter>
         </DialogContent>
