@@ -452,7 +452,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
                     setSelectedColumnIdForNewTask(projectData.columns.sort((a,b) => a.order - b.order)[0]?.id || null);
                     setIsAddTaskDialogOpen(true);
                 }}
-                variant="yellow"
+                variant="secondary"
                 disabled={isSubmitting || projectData.columns.length === 0}
             >
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircleIcon className="mr-2 h-4 w-4" />}
