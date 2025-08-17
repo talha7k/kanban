@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,7 @@ export default function TeamDetailPage() {
   const { currentUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const [team, setTeam] = useState<Team | null>(null);
   const [teamCreator, setTeamCreator] = useState<UserProfile | null>(null);
@@ -76,7 +77,9 @@ export default function TeamDetailPage() {
             title: 'Access Denied',
             description: 'You do not have permission to view this team page.',
           });
-          router.push('/team-dashboard');
+          startTransition(() => {
+            router.push('/team-dashboard');
+          });
           return;
         }
       }
@@ -244,7 +247,9 @@ export default function TeamDetailPage() {
         title: 'Team Deleted!',
         description: 'Team has been successfully deleted.',
       });
-      router.push('/teams'); // Redirect to teams page
+      startTransition(() => {
+        router.push('/teams'); // Redirect to teams page
+      });
     } catch (error) {
       console.error('Error deleting team:', error);
       toast({

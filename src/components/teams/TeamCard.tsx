@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { Team } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ type TeamCardProps = {
 export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const isOwner = currentUserId === team.ownerId;
   const memberCount = team.members?.length || team.memberIds?.length || 0;
@@ -117,7 +119,9 @@ export function TeamCard({ team, currentUserId, onSelect }: TeamCardProps) {
               className="w-full"
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/teams/${team.id}`);
+                startTransition(() => {
+                  router.push(`/teams/${team.id}`);
+                });
               }}
             >
               <Settings className="w-4 h-4 mr-1" />

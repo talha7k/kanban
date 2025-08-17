@@ -6,7 +6,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as 
 import { auth } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { createUserProfileDocument, getUserProfile } from '@/lib/firebaseUser';
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const fetchUserProfile = useCallback(async (user: FirebaseUser | null) => {
     if (user) {
@@ -116,7 +117,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await firebaseSignOut(auth);
       // onAuthStateChanged listener will set currentUser and userProfile to null
-      router.push('/login'); // Explicitly redirect
+      startTransition(() => {
+        router.push('/login'); // Explicitly redirect
+      });
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
     } catch (error) {
       const authError = error as AuthError;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -48,9 +49,12 @@ export function ProjectCard({
   openViewMembersDialog,
 }: ProjectCardProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const handleNavigateToProject = () => {
-    router.push(`/projects/${project.id}`);
+    startTransition(() => {
+      router.push(`/projects/${project.id}`);
+    });
   };
 
   return (

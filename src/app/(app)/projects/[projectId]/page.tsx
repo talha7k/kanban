@@ -1,7 +1,7 @@
 "use client";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import type { Project, UserProfile, NewTaskData, Task } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { getProjectRelevantUsers, getUserProfile } from "@/lib/firebaseUser";
 import { getProjectById, updateProjectDetails, deleteProject } from "@/lib/firebaseProject";
 import { addTaskToProject } from "@/lib/firebaseTask";
@@ -23,6 +23,7 @@ export default function ProjectPage() {
   const { toast } = useToast();
   const { projectId } = useParams();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [project, setProject] = useState<Project | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [projectCreator, setProjectCreator] = useState<UserProfile | null>(null);
@@ -124,7 +125,9 @@ export default function ProjectPage() {
         title: "Project Deleted",
         description: `"${projectToDelete.name}" has been successfully deleted.`, 
       });
-      router.push('/team-dashboard');
+      startTransition(() => {
+        router.push('/team-dashboard');
+      });
     } catch (error) {
       console.error("Error deleting project:", error);
       const errorMessage =

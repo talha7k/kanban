@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +27,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [formError, setFormError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
@@ -34,7 +35,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (currentUser) {
-      router.push('/teams'); // Redirect if already logged in
+      startTransition(() => {
+        router.push('/teams'); // Redirect if already logged in
+      });
     }
   }, [currentUser, router]);
 

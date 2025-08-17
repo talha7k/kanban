@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +31,7 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [formError, setFormError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignupFormInputs>({
     resolver: zodResolver(signupSchema),
@@ -38,7 +39,9 @@ export default function SignupPage() {
   
   useEffect(() => {
     if (currentUser) {
-      router.push('/teams'); // Redirect if already logged in
+      startTransition(() => {
+        router.push('/teams'); // Redirect if already logged in
+      });
     }
   }, [currentUser, router]);
 
@@ -52,7 +55,9 @@ export default function SignupPage() {
     try {
       await signup(data.email, data.password);
       toast({ title: "Signup Successful!", description: "You can now log in." });
-      router.push('/login'); // Redirect to login after successful signup
+      startTransition(() => {
+        router.push('/login'); // Redirect to login after successful signup
+      });
     } catch (error: any) {
       const errorMessage = error.message || "Failed to sign up. Please try again.";
       setFormError(errorMessage);
