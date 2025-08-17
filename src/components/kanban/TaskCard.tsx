@@ -70,7 +70,6 @@ export function TaskCard({
     id: task.id,
     data: {
       task,
-      columnId: task.columnId,
     },
   });
   const { currentUser } = useAuth();

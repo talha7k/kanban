@@ -39,11 +39,13 @@ import {
   DragStartEvent,
   PointerSensor,
   TouchSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   closestCorners,
+  DragOverlay,
 } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
 
 interface KanbanBoardProps {
@@ -64,6 +66,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const [taskToDeleteId, setTaskToDeleteId] = useState<TaskId | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taskViewFilter, setTaskViewFilter] = useState<'all' | 'mine'>('all');
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
 
   const { currentUser, userProfile } = useAuth();
@@ -78,9 +81,12 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200,
+        delay: 250,
         tolerance: 5,
       },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
@@ -323,7 +329,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const handleDragStart = (event: DragStartEvent) => {
     if (isSubmitting) return;
     const taskId = event.active.id as TaskId;
-    const task = projectData.tasks.find(t => t.id === taskId);
+    const task = event.active.data.current?.task || projectData.tasks.find(t => t.id === taskId);
     if (!task) return;
 
     const canDrag = canManageTasks || task.assigneeUids?.includes(currentUser?.uid || '');
@@ -332,11 +338,13 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
         return;
     }
     setDraggedTaskId(taskId);
+    setActiveTask(task);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setDraggedTaskId(null);
+    setActiveTask(null);
     
     if (!over || isSubmitting) return;
     
@@ -517,6 +525,14 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             </div>
           )}
         </div>
+        <DragOverlay>
+          {activeTask ? (
+            <div className="bg-card border rounded-lg p-3 shadow-lg opacity-90">
+              <h4 className="font-medium text-sm">{activeTask.title}</h4>
+              <p className="text-xs text-muted-foreground mt-1">{activeTask.description}</p>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       {canManageTasks && (
