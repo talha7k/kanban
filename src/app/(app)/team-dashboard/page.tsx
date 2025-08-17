@@ -103,7 +103,7 @@ export default function DashboardPage() {
   }, []);
 
   // Fetch projects first for immediate display
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     if (!currentUser?.uid || !selectedTeamId) return;
     setIsLoadingProjects(true);
 
@@ -132,10 +132,10 @@ export default function DashboardPage() {
     } finally {
       setIsLoadingProjects(false);
     }
-  };
+  }, [currentUser?.uid, selectedTeamId, selectedProjectForMembers, toast]);
 
   // Fetch team details for the header (minimal data)
-  const fetchTeamDetails = async () => {
+  const fetchTeamDetails = useCallback(async () => {
     if (!currentUser?.uid || !selectedTeamId) return;
 
     try {
@@ -149,7 +149,7 @@ export default function DashboardPage() {
         description: "Could not load team details.",
       });
     }
-  };
+  }, [currentUser?.uid, selectedTeamId, toast]);
 
   // Legacy function for backward compatibility
   const fetchDashboardData = async () => {
@@ -168,7 +168,7 @@ export default function DashboardPage() {
       
       return () => clearTimeout(timer);
     }
-  }, [currentUser?.uid, selectedTeamId]);
+  }, [currentUser?.uid, selectedTeamId, fetchProjects, fetchTeamDetails]);
 
   const handleAddProject = async (projectData: NewProjectData) => {
     if (!currentUser?.uid) {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,13 +47,19 @@ export function ProjectCard({
   openDeleteProjectDialog,
   openViewMembersDialog,
 }: ProjectCardProps) {
+  const router = useRouter();
+
+  const handleNavigateToProject = () => {
+    router.push(`/projects/${project.id}`);
+  };
+
   return (
     <Card
       key={project.id}
       className="bg-gradient-to-r from-pink-100 to-white hover:shadow-lg transition-shadow  hover:bg-gradient-to-r hover:from-pink-200 hover:to-purple-100"
     >
       <CardHeader
-        onClick={() => (window.location.href = `/projects/${project.id}`)}
+        onClick={handleNavigateToProject}
         className="pb-3 cursor-pointer"
       >
         <div className="flex justify-between items-start">
@@ -64,7 +71,7 @@ export function ProjectCard({
           )}
         </div>
         <CardDescription
-          onClick={() => (window.location.href = `/projects/${project.id}`)}
+          onClick={handleNavigateToProject}
           className="line-clamp-2 min-h-[40px] break-words cursor-pointer"
         >
           {project.description || "No description available."}
