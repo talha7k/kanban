@@ -110,7 +110,7 @@ export function TaskDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col ">
         <DialogHeader className="flex-shrink-0">
           <DialogDescription className="sr-only">
             Task details dialog for {task.title}
@@ -119,7 +119,7 @@ export function TaskDetailsDialog({
             <DialogTitle className="text-2xl font-bold text-foreground">{task.title}</DialogTitle>
             
           </div>
-          <div className="flex items-center justify-between space-x-3 mt-1">
+          <div className="flex items-center justify-between space-x-3 mt-1 ">
             {task.priority !== 'NONE' && (
                 <Badge variant={getPriorityBadgeVariant(task.priority)} className={`w-fit ${task.priority === 'MEDIUM' ? 'bg-accent text-accent-foreground' : ''}`}>
                 Priority: {task.priority}
@@ -142,9 +142,8 @@ export function TaskDetailsDialog({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0">
-          <ScrollArea className="flex-1 -mx-6 px-6">
-            <div className="space-y-4 py-4">
+        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto max-h-[88vh]">
+             <div className="space-y-4 py-4">
             {task.description && (
               <div>
                 <h3 className="font-semibold text-sm mb-1 text-muted-foreground">Description</h3>
@@ -218,16 +217,13 @@ export function TaskDetailsDialog({
 
             <div className="flex-1 flex flex-col min-h-0">
               <h3 className="font-semibold text-lg mb-2 text-foreground flex items-center flex-shrink-0"><MessageSquare className="h-5 w-5 mr-2" />Comments ({comments.length})</h3>
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-3 pr-4">
+                 <div className="space-y-3 pr-4">
                   {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
                   {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
                 </div>
-              </ScrollArea>
+             </div>
             </div>
-            </div>
-          </ScrollArea>
-        </div>
+         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-3 sm:gap-2 pt-4 border-t flex-shrink-0">
             <Input
