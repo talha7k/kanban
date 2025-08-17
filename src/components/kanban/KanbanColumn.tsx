@@ -60,28 +60,33 @@ export function KanbanColumn({
       </div>
       <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent min-h-[200px]">
         <SortableContext items={columnTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-          {columnTasks.map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              users={users}
-              projectColumns={projectColumns}
-              canManageTask={canManageTasks}
-
-              onEdit={onEditTask}
-              onDelete={onDeleteTask}
-              onViewDetails={onViewTaskDetails}
-              onMoveToNextColumn={onMoveToNextColumn}
-              onMoveToPreviousColumn={onMoveToPreviousColumn} 
-              isSubmitting={isSubmitting}
-              onUpdateTask={onUpdateTask}
-            />
-          ))}
+          <div className="space-y-2">
+            {columnTasks.map(task => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                users={users}
+                projectColumns={projectColumns}
+                canManageTask={canManageTasks}
+                onEdit={onEditTask}
+                onDelete={onDeleteTask}
+                onViewDetails={onViewTaskDetails}
+                onMoveToNextColumn={onMoveToNextColumn}
+                onMoveToPreviousColumn={onMoveToPreviousColumn} 
+                isSubmitting={isSubmitting}
+                onUpdateTask={onUpdateTask}
+              />
+            ))}
+          </div>
         </SortableContext>
         {columnTasks.length === 0 && (
-           <div className="text-center text-sm text-muted-foreground py-4 border-2 border-dashed border-border rounded-md">
+           <div className="text-center text-sm text-muted-foreground py-8 border-2 border-dashed border-border rounded-md">
             Drag tasks here or click &quot;Add Task&quot;
           </div>
+        )}
+        {/* Additional drop zone at the bottom when column has tasks */}
+        {columnTasks.length > 0 && isOver && (
+          <div className="mt-2 h-2 bg-primary/20 border-2 border-dashed border-primary rounded-md transition-all duration-200" />
         )}
       </div>
       {canManageTasks && (

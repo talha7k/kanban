@@ -27,6 +27,9 @@ import {
   DndContext,
   closestCorners,
   DragOverlay,
+  pointerWithin,
+  rectIntersection,
+  getFirstCollision,
 } from '@dnd-kit/core';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { useTaskManagement } from '@/hooks/useTaskManagement';
@@ -118,6 +121,49 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   }
 
   const allTasksForDependencies = projectData.tasks.map(t => ({ id: t.id, title: t.title }));
+
+  // Custom collision detection that handles both column drops and task reordering
+  const customCollisionDetection = (args: any) => {
+    const { active, droppableContainers } = args;
+    
+    // Get all possible collisions
+    const pointerCollisions = pointerWithin(args);
+    const rectCollisions = rectIntersection(args);
+    const closestCornersCollisions = closestCorners(args);
+    
+    // Separate task and column collisions
+    const taskCollisions = closestCornersCollisions.filter(collision => 
+      projectData.tasks.some(task => task.id === collision.id)
+    );
+    
+    const columnCollisions = pointerCollisions.filter(collision => 
+      projectData.columns.some(col => col.id === collision.id)
+    );
+    
+    // If dragging over a different column than the active task's column
+    const activeTask = projectData.tasks.find(task => task.id === active.id);
+    if (activeTask && columnCollisions.length > 0) {
+      const targetColumn = columnCollisions[0];
+      
+      // If it's a different column, prioritize column collision for inter-column moves
+      if (targetColumn.id !== activeTask.columnId) {
+        return [targetColumn];
+      }
+    }
+    
+    // For same column or no column collision, use task collisions for reordering
+    if (taskCollisions.length > 0) {
+      return taskCollisions;
+    }
+    
+    // Fall back to column collisions
+    if (columnCollisions.length > 0) {
+      return columnCollisions;
+    }
+    
+    // Final fallback
+    return closestCornersCollisions.length > 0 ? closestCornersCollisions : rectCollisions;
+  };
 
   const handleAddTaskWrapper = async (taskData: TaskFormData, columnId: string) => {
     setIsSubmitting(true);
@@ -227,7 +273,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
       <div className="flex-1 overflow-hidden">
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={customCollisionDetection}
           onDragStart={dragHandlers.handleDragStart}
           onDragOver={dragHandlers.handleDragOver}
           onDragEnd={dragHandlers.handleDragEnd}

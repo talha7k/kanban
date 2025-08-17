@@ -99,9 +99,17 @@ export function useDragAndDrop(
       // Dropped on a column - move to that column
       const newColumnId = overId;
       if (activeTask.columnId !== newColumnId) {
+        // Get tasks in the target column and sort by order
+        const targetColumnTasks = tasks
+          .filter(task => task.columnId === newColumnId)
+          .sort((a, b) => a.order - b.order);
+        
+        // Place at the end of the target column
+        const newOrder = targetColumnTasks.length;
+        
         const updatedTasks = tasks.map(task => {
           if (task.id === activeId) {
-            return { ...task, columnId: newColumnId };
+            return { ...task, columnId: newColumnId, order: newOrder };
           }
           return task;
         });
@@ -109,7 +117,7 @@ export function useDragAndDrop(
         
         // Persist the change to database
         if (onUpdateTask) {
-          onUpdateTask(activeId, { columnId: newColumnId }).catch(console.error);
+          onUpdateTask(activeId, { columnId: newColumnId, order: newOrder }).catch(console.error);
         }
       }
     } else {
