@@ -311,10 +311,10 @@ export default function TeamDetailPage() {
           ) : (
             <div className="space-y-2">
               {teamMembers.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-2 border rounded">
+                <div key={member.id} className="flex items-center justify-between p-2 border rounded bg-gradient-to-br from-blue-100 to-white">
                   <div className="flex flex-col">
                     <span className="font-medium">{member.name}</span>
-                    <span className="text-sm text-gray-600">{member.email}</span>
+                    <span className="text-sm text-gray-600 break-all">{member.email}</span>
                   </div>
                   {member.id !== currentUser?.uid && (
                     <Button

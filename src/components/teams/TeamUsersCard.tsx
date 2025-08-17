@@ -129,7 +129,7 @@ export function TeamUsersCard({
                 return (
                 <li
                   key={user.id}
-                  className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50"
+                  className="flex items-start space-x-3 p-2 rounded-md bg-gradient-to-r from-blue-100 to-white hover:bg-muted/50"
                 >
                   <Avatar className="h-9 w-9">
                     <AvatarImage
@@ -162,7 +162,7 @@ export function TeamUsersCard({
                       </Badge>
                     </div>
                     <p
-                      className="text-xs text-muted-foreground truncate"
+                      className="text-xs text-muted-foreground break-all"
                       title={user.email || ""}
                     >
                       {user.email}
