@@ -168,7 +168,8 @@ export function EditProjectDialog({
               }}
               disabled={isSubmitting}
             >
-              <Trash2 className="h-3.5 w-3.5 mr-6" />
+              <Trash2 className="h-3.5 w-3.5 mr-2" />
+              Delete Project
             </Button>
             <Button type="button" variant="outline" onClick={handleDialogClose} disabled={isSubmitting}>
               Cancel
