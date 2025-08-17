@@ -459,6 +459,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             Task
             </Button>
         )}
+        Click on card to open task details. Drag cards or press right arrow to move tasks.
       </div>
       <div className="flex-1 grid grid-cols-1 gap-4 lg:flex lg:gap-4 lg:overflow-x-auto pb-4 lg:scrollbar-thin lg:scrollbar-thumb-primary/50 lg:scrollbar-track-transparent">
         {projectData.columns.sort((a,b) => a.order - b.order).map(column => (
