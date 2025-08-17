@@ -58,7 +58,7 @@ export function TaskFormFields({ form, assignableUsers, allTasksForDependencies 
           <Label htmlFor="title">Title</Label>
           <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
             <DialogTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="ml-2">
+              <Button type="button" variant="default" size="sm" className="m-2">
                 <Sparkles className="mr-2 h-4 w-4" /> AI Generate
               </Button>
             </DialogTrigger>

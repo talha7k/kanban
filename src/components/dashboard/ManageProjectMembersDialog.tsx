@@ -244,7 +244,7 @@ export function ManageProjectMembersDialog({
             </Popover>
             <Button onClick={handleAddMember} disabled={isSubmitting || selectedUsersToAdd.length === 0}>
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                <span className="ml-2">Add Selected ({selectedUsersToAdd.length})</span>
+                <span className="ml-2">Add ({selectedUsersToAdd.length})</span>
             </Button>
           </div>
         </div>

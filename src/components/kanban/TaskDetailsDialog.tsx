@@ -110,18 +110,9 @@ export function TaskDetailsDialog({
           </DialogDescription>
           <div className="flex justify-between items-start">
             <DialogTitle className="text-2xl font-bold text-foreground">{task.title}</DialogTitle>
-            {canManageTask && (
-                <div className="flex space-x-2">
-                    <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment}>
-                        <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="destructive" size="icon" onClick={() => { onDeleteTask(task.id);}} aria-label="Delete task" disabled={isSubmittingComment}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            )}
+            
           </div>
-          <div className="flex items-center space-x-3 mt-1">
+          <div className="flex items-center justify-between space-x-3 mt-1">
             {task.priority !== 'NONE' && (
                 <Badge variant={getPriorityBadgeVariant(task.priority)} className={`w-fit ${task.priority === 'MEDIUM' ? 'bg-accent text-accent-foreground' : ''}`}>
                 Priority: {task.priority}
@@ -131,6 +122,15 @@ export function TaskDetailsDialog({
                 <span className="text-xs text-muted-foreground flex items-center">
                     <Clock className="h-3.5 w-3.5 mr-1.5" /> {dueDateStatusText}
                 </span>
+            )}{canManageTask && (
+                <div className="flex gap-2 mt-2">
+                    <Button variant="outline" size="icon" onClick={() => { onOpenChange(false); onEditTask(task);}} aria-label="Edit task" disabled={isSubmittingComment}>
+                        <Edit2 className="h-3 w-3" />
+                    </Button>
+                    <Button variant="destructive" size="icon" onClick={() => { onDeleteTask(task.id);}} aria-label="Delete task" disabled={isSubmittingComment}>
+                        <Trash2 className="h-3 w-3" />
+                    </Button>
+                </div>
             )}
           </div>
         </DialogHeader>

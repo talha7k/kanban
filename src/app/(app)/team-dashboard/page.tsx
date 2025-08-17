@@ -366,7 +366,7 @@ export default function DashboardPage() {
         <div className="flex flex-row items-center  gap-4 mx-auto md:mx-0">
           {currentUser && (
             <Button onClick={() => setIsCreateProjectDialogOpen(true)}>
-              <PlusCircle className="mr-2 h-5 w-5" />New Project
+              <PlusCircle className="mr-2 h-5 w-5" />Project
             </Button>
           )}{" "}
            
