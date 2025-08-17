@@ -20,6 +20,7 @@ import {
   ArrowRightCircle,
   ArrowLeftCircle,
   Eye,
+  Clock2Icon,
 } from "lucide-react";
 import {
   format,
@@ -175,7 +176,7 @@ export function TaskCard({
       }`}
       aria-label={`Task: &quot;${task.title}&quot;, Priority: &quot;${task.priority}&quot;`}
     >
-      <CardHeader className="p-4">
+      <CardHeader className="">
         <div className="flex justify-between items-start">
           <CardTitle className="text-base font-semibold leading-tight text-card-foreground">
             {task.title}
@@ -195,15 +196,15 @@ export function TaskCard({
         </div>
       </CardHeader>
       {task.description && (
-        <CardContent className="px-4 pb-2 pt-0">
-          <p className="text-xs text-muted-foreground line-clamp-2">
+        <CardContent className="px-4 py-0 my-0">
+          <p className="text-xs text-muted-foreground line-clamp-3">
             {task.description}
           </p>
         </CardContent>
       )}
-      <CardFooter className="p-4 flex flex-col items-start space-y-3">
-        <div className="flex justify-between w-full items-center">
-          <div className="flex -space-x-2">
+      <CardFooter className="flex flex-col items-start ">
+        <div className="flex justify-between w-full items-center ">
+          <div className="flex -space-x-2 mt-3">
             {assignees.slice(0, 3).map((assignee) => (
               <Avatar
                 key={assignee.id}
@@ -223,29 +224,29 @@ export function TaskCard({
               </Avatar>
             )}
           </div>
-          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+          <div className="flex items-center space-x-2 text-xs gap-3 text-muted-foreground mt-3 mr-2">
             {task.comments && task.comments.length > 0 && (
-              <span className="flex items-center">
-                <MessageSquare className="h-3 w-3 mr-1" />{" "}
+              <span className="flex text-xs font-bold items-center text-blue-400">
+                <MessageSquare className="h-4 w-4 mr-1" />{" "}
                 {task.comments.length}
               </span>
             )}
             {dueDateStatus && (
               <span
-                className={`flex items-center ${dueDateStatus.colorClass}`}
+                className={`flex text-xs font-semibold items-center ${dueDateStatus.colorClass}`}
                 title={`Due: ${
                   task.dueDate
                     ? format(parseISO(task.dueDate), "MMM d, yyyy")
                     : "N/A"
                 }`}
               >
-                {dueDateStatus.icon} {dueDateStatus.text}
+                <Clock2Icon className="h-4 w-4 mr-1" /> {dueDateStatus.text}
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex space-x-1 w-full justify-end items-center mt-2">
+        <div className="flex space-x-1 w-full justify-end items-center gap-4 mt-2">
           {canMoveTask && hasPreviousColumn && (
             <Button
               variant="ghost"
