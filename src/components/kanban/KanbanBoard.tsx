@@ -9,7 +9,7 @@ import { TaskDetailsDialog } from './TaskDetailsDialog';
 import { useState, useEffect, useMemo } from 'react';
 import type { TaskFormData } from './TaskFormFields';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, ListFilter, UserCheck } from 'lucide-react';
+import { Plus, Loader2, ListFilter, UserCheck, PlusCircleIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -455,8 +455,8 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
                 variant="yellow"
                 disabled={isSubmitting || projectData.columns.length === 0}
             >
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-            Add New Task
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircleIcon className="mr-2 h-4 w-4" />}
+            Task
             </Button>
         )}
       </div>

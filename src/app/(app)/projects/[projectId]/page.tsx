@@ -7,7 +7,7 @@ import { getProjectById, updateProjectDetails, deleteProject } from "@/lib/fireb
 import { addTaskToProject } from "@/lib/firebaseTask";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Settings, Sparkles, ArrowLeft } from "lucide-react";
+import { Loader2, Settings, Sparkles, ArrowLeft, Edit2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { EditProjectDialog } from "@/components/project/EditProjectDialog";
@@ -340,8 +340,8 @@ export default function ProjectPage() {
                       className="md:mr-2 mb-2 sm:mb-0"
                       disabled={isSubmittingProjectEdit}
                     >
-                      <Settings className="h-5 w-5" />
-                      Edit Project
+                      <Edit2Icon className="h-5 w-5" />
+                      Project
                     </Button>
                     <Button
                       variant="default"
@@ -349,7 +349,7 @@ export default function ProjectPage() {
                       className="mb-2 sm:mb-0"
                       disabled={isSubmittingProjectEdit}
                     >
-                      <Sparkles className="h-5 w-5" /> Generate Tasks
+                      <Sparkles className="h-5 w-5" /> AI Tasks
                     </Button>
                   </>
                 )}
