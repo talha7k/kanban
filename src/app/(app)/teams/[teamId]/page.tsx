@@ -52,9 +52,9 @@ export default function TeamDetailPage() {
       setTeamProjects(projects);
       
       // Fetch team creator profile
-      if (fetchedTeam?.createdBy) {
+      if (fetchedTeam?.ownerId) {
         try {
-          const creatorProfile = await getUserProfile(fetchedTeam.createdBy);
+          const creatorProfile = await getUserProfile(fetchedTeam.ownerId);
           setTeamCreator(creatorProfile);
         } catch (error) {
           console.error('Error fetching team creator profile:', error);
@@ -305,7 +305,7 @@ export default function TeamDetailPage() {
         </CardHeader>
         <CardContent>
           <p><strong>Description:</strong> {team.description || 'N/A'}</p>
-          <p><strong>Created By:</strong> {teamCreator?.name || team.createdBy}</p>
+          <p><strong>Created By:</strong> {teamCreator?.name || team.ownerId}</p>
           <p><strong>Created At:</strong> {new Date(team.createdAt).toLocaleDateString()}</p>
         </CardContent>
       </Card>

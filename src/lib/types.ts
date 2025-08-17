@@ -46,7 +46,6 @@ export interface Team {
   members?: UserProfile[]; // Optional: populated when fetching team details with member profiles
   createdAt: string;
   updatedAt: string;
-  createdBy: UserId; // User who created the team
 }
 
 export interface Task {
