@@ -211,12 +211,10 @@ export function TaskDetailsDialog({
 
             <div>
               <h3 className="font-semibold text-lg mb-2 text-foreground flex items-center"><MessageSquare className="h-5 w-5 mr-2" />Comments ({comments.length})</h3>
-              <ScrollArea className="h-[200px] pr-4">
-            <div className="space-y-1">
-              {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
-              {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
-            </div>
-          </ScrollArea>
+              <div className="space-y-3 mt-4">
+                {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
+                {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
+              </div>
             </div>
           </div>
         </ScrollArea>

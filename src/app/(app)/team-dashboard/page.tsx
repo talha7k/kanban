@@ -387,7 +387,7 @@ export default function DashboardPage() {
               )
             </CardTitle>
             <CardDescription>
-              Manage your ongoing and upcoming projects.
+              Manage your ongoing and upcoming projects. Click on card to view project board.
             </CardDescription>
           </CardHeader>
           <CardContent>

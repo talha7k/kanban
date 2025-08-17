@@ -548,7 +548,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
             Task
             </Button>
         )}
-        Click on card to open task details. Drag cards or press right arrow to move tasks.
+        <span className='text-xs'>Drag cards or press right arrow to move tasks. Click view icon to see task details.</span>
       </div>
       <DndContext
         sensors={sensors}
