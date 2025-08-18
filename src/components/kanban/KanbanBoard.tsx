@@ -86,6 +86,16 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
     currentUser?.uid || ''
   );
 
+  // Update taskToView when the corresponding task in tasks array is updated
+  useEffect(() => {
+    if (taskToView && projectData.tasks) {
+      const updatedTask = projectData.tasks.find(task => task.id === taskToView.id);
+      if (updatedTask && updatedTask !== taskToView) {
+        setTaskToView(updatedTask);
+      }
+    }
+  }, [projectData.tasks, taskToView, setTaskToView]);
+
   // Initialize custom hooks
   const { dragHandlers, sensors, activeId, activeTask } = useDragAndDrop(
     projectData.tasks,
