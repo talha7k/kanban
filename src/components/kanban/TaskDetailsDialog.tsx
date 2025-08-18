@@ -232,7 +232,7 @@ export function TaskDetailsDialog({
 
             <div className="flex-1 flex flex-col min-h-0">
               <h3 className="font-semibold text-lg mb-2 text-foreground flex items-center flex-shrink-0"><MessageSquare className="h-5 w-5 mr-2" />Comments ({comments.length})</h3>
-                 <div className="space-y-3 pr-4">
+                 <div className="space-y-2 pr-4">
                   {comments.map(comment => <CommentItem key={comment.id} comment={comment} />)}
                   {comments.length === 0 && <p className="text-sm text-muted-foreground">No comments yet.</p>}
                 </div>

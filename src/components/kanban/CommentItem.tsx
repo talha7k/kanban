@@ -8,7 +8,7 @@ interface CommentItemProps {
 
 export function CommentItem({ comment }: CommentItemProps) {
   return (
-    <div className="flex items-start space-x-3 py-3">
+    <div className="flex items-start space-x-3 py-2">
       <Avatar className="h-8 w-8">
         <AvatarImage src={comment.avatarUrl} alt={comment.userName} data-ai-hint="profile avatar" />
         <AvatarFallback>{comment.userName?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>

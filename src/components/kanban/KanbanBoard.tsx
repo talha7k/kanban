@@ -216,7 +216,7 @@ export function KanbanBoard({ project: initialProject, users }: KanbanBoardProps
   const handleAddCommentWrapper = async (taskId: string, commentText: string) => {
     const commentData = {
       userId: currentUser?.uid || '',
-      userName: userProfile?.name || userProfile?.email || 'Anonymous',
+      userName: userProfile?.name || currentUser?.displayName || userProfile?.email || currentUser?.email || 'Anonymous',
       content: commentText,
       ...(userProfile?.avatarUrl && { avatarUrl: userProfile.avatarUrl }),
     };

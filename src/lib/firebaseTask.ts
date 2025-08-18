@@ -195,8 +195,8 @@ export const addCommentToTask = async (projectId: string, taskId: TaskId, commen
     const newComment: Comment = {
       id: uuidv4(),
       userId: currentUser.uid,
-      userName: currentUser.displayName || 'Anonymous',
-      ...(currentUser.photoURL && { avatarUrl: currentUser.photoURL }),
+      userName: commentData.userName,
+      ...(commentData.avatarUrl && { avatarUrl: commentData.avatarUrl }),
       content: commentData.content,
       createdAt: new Date().toISOString(),
     };
