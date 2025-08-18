@@ -61,14 +61,7 @@ export function TaskDetailsDialog({
     if (isOpen) {
         setNewComment('');
     }
-  }, [task, task?.comments, isOpen]);
-
-  // Update comments when task changes (for real-time updates)
-  useEffect(() => {
-    if (task && task.comments) {
-      setComments([...task.comments].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-    }
-  }, [task?.comments]);
+  }, [task?.comments, isOpen]);
 
   if (!isOpen || !task) return null;
 
