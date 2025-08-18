@@ -83,12 +83,9 @@ export function TaskDetailsDialog({
     setIsSubmittingLocalComment(true);
     try {
       await onAddComment(task.id, newComment);
-      // Refresh comments from the updated task
-      if (task && task.comments) {
-        setComments(task.comments);
-      }
       setNewComment(''); // Clear the input after successful submission
       toast({ title: "Comment Added", description: "Your comment has been added successfully." });
+      // Note: Comments will be updated automatically via useEffect when task.comments changes
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to add comment. Please try again." });
     } finally {
